@@ -1,14 +1,7 @@
 #include <AssertMacros.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <CoreAudio/CoreAudio.h>
-#include <assert.h>
-#include <dlfcn.h>
 #include <ruby.h>
-#include <stdio.h>
-
-#define HTTP_STATUS_OK 200
-#define HTTP_STATUS_NOT_FOUND 404
-#define HTTP_STATUS_METHOD_NOT_ALLOWED 405
 
 // This call creates the Graph and the Synth unit...
 static OSStatus CreateAUGraph(AUGraph *outGraph, AudioUnit *outSynth) {
@@ -57,22 +50,13 @@ enum {
   kMidiMessage_NoteOn = 0x9
 };
 
-static void play_sound(void) {
+void play_sound(void) {
   AUGraph graph = 0;
   AudioUnit synthUnit;
   OSStatus result;
   char *bankPath = 0;
 
   UInt8 midiChannelInUse = 0; // we're using midi channel 1...
-
-  // this is the only option to main that we have...
-  // just the full path of the sample bank...
-
-  // On OS X there are known places were sample banks can be stored
-  // Library/Audio/Sounds/Banks - so you could scan this directory and give the user options
-  // about which sample bank to use...
-  // if (argc > 1)
-  // 	bankPath = const_cast<char*>(argv[1]);
 
   __Require_noErr(result = CreateAUGraph(&graph, &synthUnit), home);
 
@@ -88,7 +72,6 @@ static void play_sound(void) {
   // 										kMusicDeviceProperty_SoundBankFSRef,
   // 										kAudioUnitScope_Global, 0,
   // 										&fsRef, sizeof(fsRef)), home);
-
   // }
 
   // ok we're set up to go - initialize and start the graph
@@ -103,7 +86,8 @@ static void play_sound(void) {
                                                 0 /*prog change num*/, 0, 0 /*sample offset*/),
                   home);
 
-  CAShow(graph); // prints out the graph so we can see what it looks like...
+  // prints out the graph so we can see what it looks like...
+  // CAShow(graph);
 
   __Require_noErr(result = AUGraphStart(graph), home);
 
@@ -134,87 +118,4 @@ home:
   // return result;
 }
 
-/**
- * This is the `app` proc implementation.
- */
-static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, _)) {
-  // is_post = env["REQUEST_METHOD"] == "POST"
-  VALUE request_method = rb_hash_fetch(env, rb_str_new_cstr("REQUEST_METHOD"));
-  VALUE is_post = rb_str_equal(request_method, rb_str_new_cstr("POST"));
-  // matches_route = env["PATH_INFO"] == "/webhooks/analytics"
-  VALUE request_path = rb_hash_fetch(env, rb_str_new_cstr("PATH_INFO"));
-  VALUE matches_route = rb_str_equal(request_path, rb_str_new_cstr("/webhooks/analytics"));
-
-  int c_status = is_post == Qfalse ? HTTP_STATUS_METHOD_NOT_ALLOWED
-                                   : (matches_route == Qtrue ? HTTP_STATUS_OK : HTTP_STATUS_NOT_FOUND);
-
-  if (c_status == HTTP_STATUS_OK) {
-    // json = JSON.parse(env["rack.input"].read)
-    VALUE request_body_stream = rb_hash_fetch(env, rb_str_new_cstr("rack.input"));
-    VALUE request_body = rb_funcall(request_body_stream, rb_intern("read"), 0);
-    VALUE rb_mJSON = rb_const_get(rb_cObject, rb_intern("JSON"));
-    VALUE json = rb_funcall(rb_mJSON, rb_intern("parse"), 1, request_body);
-
-    // json["type"] == "page"
-    VALUE type = rb_hash_fetch(json, rb_str_new_cstr("type"));
-    if (rb_str_equal(type, rb_str_new_cstr("page")) == Qtrue) {
-      rb_p(json);
-      play_sound();
-    }
-  }
-
-  // response = [200, {}, ["OK"]]
-  VALUE status = INT2FIX(c_status);
-  VALUE headers = rb_hash_new();
-  VALUE body = rb_ary_new();
-  rb_ary_push(body, rb_str_new_cstr("OK"));
-  VALUE response = rb_ary_new();
-  rb_ary_push(response, status);
-  rb_ary_push(response, headers);
-  rb_ary_push(response, body);
-  rb_p(response);
-
-  return response;
-}
-
-int main(int argc, char *argv[]) {
-  ruby_init();
-  ruby_init_loadpath();
-
-  // Get location of native extensions for current Ruby
-  rb_require("rbconfig");
-  VALUE rb_mRbConfig = rb_const_get(rb_cObject, rb_intern("RbConfig"));
-  VALUE rb_cCONFIG = rb_const_get(rb_mRbConfig, rb_intern("CONFIG"));
-  VALUE extdir = rb_hash_fetch(rb_cCONFIG, rb_str_new_cstr("rubyarchdir"));
-  assert(extdir != Qnil && "Failed to determine extension dir (rubyarchdir)");
-
-  // Load Ruby encoding extension
-  VALUE encbundle = rb_funcall(rb_cFile, rb_intern("join"), 2, extdir, rb_str_new_cstr("enc/encdb.bundle"));
-  void *encdb = dlopen(StringValuePtr(encbundle), RTLD_NOW);
-  assert(encdb != NULL && "Failed to load encdb.bundle");
-  void (*Init_encdb)(void) = dlsym(encdb, "Init_encdb");
-  Init_encdb();
-
-  // Load gems
-  rb_require("bundler/setup");
-  rb_require("rack");
-  rb_require("json/ext");
-
-  // Rack::Handler::WEBrick
-  VALUE rb_mRack = rb_const_get(rb_cObject, rb_intern("Rack"));
-  VALUE rb_mRackHandler = rb_const_get(rb_mRack, rb_intern("Handler"));
-  VALUE rb_cRackHandlerWEBrick = rb_const_get(rb_mRackHandler, rb_intern("WEBrick"));
-
-  // Rack::Handler::WEBrick.run(proc { … })
-  rb_funcall(rb_cRackHandlerWEBrick, rb_intern("run"), 1, rb_proc_new(app, 0));
-
-  // int state;
-  // VALUE result = rb_eval_string_protect("p Rack::Handler::WEBrick", &state);
-  // if (state) {
-  //   VALUE exception = rb_errinfo();
-  //   rb_set_errinfo(Qnil);
-  //   rb_p(exception);
-  // }
-
-  return ruby_cleanup(0);
-}
+void Init_ArtC_sound(VALUE mArtC) {}

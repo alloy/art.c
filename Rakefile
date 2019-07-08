@@ -1,6 +1,6 @@
 require "rbconfig"
 
-BIN = "./workbench/artsy-in-c"
+BIN = "./workbench/artc"
 INCLUDE = [RbConfig::CONFIG["rubyhdrdir"], RbConfig::CONFIG["rubyarchhdrdir"]]
 LDPATH = [RbConfig::CONFIG["libdir"]]
 LINK_LIBS = ["ruby"]
@@ -30,7 +30,7 @@ task :compile => "workbench" do
   lib_paths = LDPATH.map { |ld| "-L '#{ld}'" }.join(" ")
   lib_linkage = LINK_LIBS.map { |l| "-l #{l}" }.join(" ")
   framework_linkage = LINK_FRAMEWORKS.map { |f| "-framework #{f}" }.join(" ")
-  sh "clang #{include_paths} #{lib_paths} #{lib_linkage} #{framework_linkage} main.c -o #{BIN}"
+  sh "clang #{include_paths} #{lib_paths} #{lib_linkage} #{framework_linkage} *.c -o #{BIN}"
 end
 
 task :run => :compile do
