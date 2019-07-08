@@ -4,6 +4,8 @@
 #include <ruby.h>
 #include <stdio.h>
 
+static VALUE mArtC;
+
 static void load_bundler_env(void) { rb_require("bundler/setup"); }
 
 static void load_encoding_ext(void) {
@@ -22,6 +24,12 @@ static void load_encoding_ext(void) {
   Init_encdb();
 }
 
+static VALUE handle_event(RB_BLOCK_CALL_FUNC_ARGLIST(event, _)) {
+  rb_p(event);
+  rb_funcall(mArtC, rb_intern("play_sound"), 0);
+  return Qnil;
+}
+
 int main(int argc, char *argv[]) {
   ruby_init();
   ruby_init_loadpath();
@@ -30,14 +38,16 @@ int main(int argc, char *argv[]) {
   load_bundler_env();
 
   // module ArtC; end
-  VALUE mArtC = rb_define_module("ArtC");
+  mArtC = rb_define_module("ArtC");
 
   // Initialize other ArtC extensions
   Init_ArtC_server();
   Init_ArtC_sound();
 
   // Let's dance
-  rb_funcall(mArtC, rb_intern("start_server"), 0);
+
+  // ArtC.start_server { … }
+  rb_funcall_with_block(mArtC, rb_intern("start_server"), 0, NULL, rb_proc_new(handle_event, 0));
 
   return ruby_cleanup(0);
 }
