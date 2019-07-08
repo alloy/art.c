@@ -1,0 +1,12 @@
+{
+  "channel": "server",
+  "email": "test@example.org",
+  "messageId": "test-message-uxxrgb",
+  "name": "Home Page",
+  "projectId": "oRx51HW70S",
+  "properties": { "property1": 1, "property2": "test", "property3": true },
+  "replay": true,
+  "timestamp": "2019-07-08T11:35:29.207Z",
+  "type": "page",
+  "userId": "test-user-sly7aj"
+}

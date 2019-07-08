@@ -1,0 +1,11 @@
+{
+  "channel": "server",
+  "email": "test@example.org",
+  "messageId": "test-message-mskcn",
+  "projectId": "oRx51HW70S",
+  "replay": true,
+  "timestamp": "2019-07-08T11:34:57.935Z",
+  "traits": { "trait1": 1, "trait2": "test", "trait3": true },
+  "type": "identify",
+  "userId": "test-user-qsjg5"
+}

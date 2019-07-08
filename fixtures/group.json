@@ -1,0 +1,13 @@
+{
+  "messageId": "test-message-e31cs",
+  "timestamp": "2019-07-08T11:36:23.942Z",
+  "type": "group",
+  "email": "test@example.org",
+  "projectId": "oRx51HW70S",
+  "traits": {
+    "trait1": 1,
+    "trait2": "test",
+    "trait3": true
+  },
+  "groupId": "test-group-ze01v"
+}
