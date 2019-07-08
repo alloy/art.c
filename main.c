@@ -11,10 +11,11 @@
  * This is the `app` proc implementation.
  */
 static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, _)) {
+  // is_post = env["REQUEST_METHOD"] == "POST"
   VALUE request_method = rb_hash_fetch(env, rb_str_new_cstr("REQUEST_METHOD"));
-  VALUE request_path = rb_hash_fetch(env, rb_str_new_cstr("PATH_INFO"));
-
   VALUE is_post = rb_str_equal(request_method, rb_str_new_cstr("POST"));
+  // matches_route = env["PATH_INFO"] == "/webhooks/analytics"
+  VALUE request_path = rb_hash_fetch(env, rb_str_new_cstr("PATH_INFO"));
   VALUE matches_route = rb_str_equal(request_path, rb_str_new_cstr("/webhooks/analytics"));
 
   int c_status = is_post == Qfalse ? HTTP_STATUS_METHOD_NOT_ALLOWED
@@ -29,11 +30,11 @@ static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, _)) {
     rb_p(json);
   }
 
+  // response = [200, {}, ["OK"]]
   VALUE status = INT2FIX(c_status);
   VALUE headers = rb_hash_new();
   VALUE body = rb_ary_new();
   rb_ary_push(body, rb_str_new_cstr("OK"));
-
   VALUE response = rb_ary_new();
   rb_ary_push(response, status);
   rb_ary_push(response, headers);
