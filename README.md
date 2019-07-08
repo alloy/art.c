@@ -1,6 +1,7 @@
 # art.c
 
-Artsy in C major and pure C Ruby, for no reason other than sentiment.
+Artsy analytics events observed in sound played in C major, using pure C Ruby
+for no reason other than sentiment.
 
 https://twitter.com/alloy/status/613375165582417922
 
