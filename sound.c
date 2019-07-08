@@ -68,8 +68,8 @@ static void play_sound_impl(void) {
 
   __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, noteOnCommand, noteNum, onVelocity, 0), home);
 
-  // sleep for a second
-  usleep(1 * 1000 * 1000);
+  int ms = 1 * 1000;
+  usleep(ms * 100);
 
   __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, noteOnCommand, noteNum, 0, 0), home);
 

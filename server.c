@@ -29,13 +29,8 @@ static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, event_handler)) {
     VALUE request_body_stream = rb_hash_fetch(env, rb_str_new_cstr("rack.input"));
     VALUE request_body = rb_funcall(request_body_stream, rb_intern("read"), 0);
     VALUE rb_mJSON = rb_const_get(rb_cObject, rb_intern("JSON"));
-    VALUE json = rb_funcall(rb_mJSON, rb_intern("parse"), 1, request_body);
-
-    // json["type"] == "page"
-    VALUE type = rb_hash_fetch(json, rb_str_new_cstr("type"));
-    if (rb_str_equal(type, rb_str_new_cstr("page")) == Qtrue) {
-      rb_proc_call(event_handler, rb_ary_new3(1, json));
-    }
+    VALUE event = rb_funcall(rb_mJSON, rb_intern("parse"), 1, request_body);
+    rb_proc_call(event_handler, rb_ary_new3(1, event));
   }
 
   // response = [200, {}, ["OK"]]

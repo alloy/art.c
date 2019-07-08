@@ -1,0 +1,40 @@
+{
+  "_metadata": {
+    "bundled": ["Google Analytics", "Segment.io"],
+    "unbundled": []
+  },
+  "anonymousId": "f09ff3a1-5a38-4c68-b37f-dbaf390f0e02",
+  "channel": "client",
+  "context": {
+    "ip": "77.251.154.6",
+    "library": { "name": "analytics.js", "version": "3.8.2" },
+    "page": {
+      "path": "/",
+      "referrer": "https://staging.artsy.net/artwork/banksy-banksy-dismaland-x-jeff-gillette-minnie-hiroshima-2-ltd-edt",
+      "search": "",
+      "title": "Artsy - Discover, Research, and Collect the World's Best Art Online",
+      "url": "https://staging.artsy.net"
+    },
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0.3 Safari/605.1.15"
+  },
+  "event": "Clicked rail on homepage",
+  "integrations": {},
+  "messageId": "ajs-ae66fc13bfb57ceb34e6963fe9905f96",
+  "originalTimestamp": "2019-07-08T21:19:29.629Z",
+  "projectId": "oRx51HW70S",
+  "properties": {
+    "context_module": "popular_artists",
+    "destination_path": "/artwork/andy-warhol-myths-the-star",
+    "event_name": "click",
+    "flow": "home personalization rails",
+    "label": "artwork",
+    "type": "artwork-brick__image",
+    "value": "0"
+  },
+  "receivedAt": "2019-07-08T21:19:29.812Z",
+  "sentAt": "2019-07-08T21:19:29.633Z",
+  "timestamp": "2019-07-08T21:19:29.808Z",
+  "type": "track",
+  "userId": "547c73d57261692d83d70000",
+  "version": 2
+}

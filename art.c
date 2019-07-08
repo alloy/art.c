@@ -26,7 +26,15 @@ static void load_encoding_ext(void) {
 
 static VALUE handle_event(RB_BLOCK_CALL_FUNC_ARGLIST(event, _)) {
   rb_p(event);
-  rb_funcall(mArtC, rb_intern("play_sound"), 0);
+  VALUE type = rb_hash_fetch(event, rb_str_new_cstr("type"));
+  // event["type"] == "track"
+  if (rb_str_equal(type, rb_str_new_cstr("track")) == Qtrue) {
+    rb_funcall(mArtC, rb_intern("play_sound"), 0);
+  }
+  // event["type"] == "page"
+  else if (rb_str_equal(type, rb_str_new_cstr("page")) == Qtrue) {
+    rb_funcall(mArtC, rb_intern("play_sound"), 0);
+  }
   return Qnil;
 }
 
