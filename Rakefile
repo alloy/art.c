@@ -1,7 +1,5 @@
 require "rbconfig"
 
-# p RbConfig::CONFIG
-
 BIN = "./workbench/artsy-in-c"
 INCLUDE = [RbConfig::CONFIG["rubyhdrdir"], RbConfig::CONFIG["rubyarchhdrdir"]]
 LDPATH = [RbConfig::CONFIG["libdir"]]
@@ -26,11 +24,14 @@ end
 directory "workbench"
 
 task :compile => "workbench" do
-  sh "clang #{INCLUDE.map { |i| "-I '#{i}'" }.join(" ")} #{LDPATH.map { |ld| "-L '#{ld}'" }.join(" ")} #{LINK.map { |l| "-l #{l}" }.join(" ")} main.c -o #{BIN}"
+  include_paths = INCLUDE.map { |i| "-I '#{i}'" }.join(" ")
+  lib_paths = LDPATH.map { |ld| "-L '#{ld}'" }.join(" ")
+  linkage = LINK.map { |l| "-l #{l}" }.join(" ")
+  sh "clang #{include_paths} #{lib_paths} #{linkage} main.c -o #{BIN}"
 end
 
 task :run => :compile do
-  sh "env LD_LIBRARY_PATH=#{File.join(RbConfig::CONFIG["rubyarchdir"], "enc")} bundle exec #{BIN}"
+  sh "bundle exec #{BIN}"
 end
 
 task :default => :run

@@ -2,13 +2,8 @@ Artsy in C
 
 # Installation
 
-1. Install `pkg-config`:
-
-   ```bash
-   $ brew install pkg-config
-   ```
-
-1. Install Ruby _with_ a dynamic (shared) library product. E.g.:
+1. On macOS you can use the system Ruby, but if you prefer a newer version of Ruby install one _with_ a dynamic (shared)
+   library product. E.g.:
 
    ```bash
    $ ruby-install ruby 2.6.3 -- --enable-shared

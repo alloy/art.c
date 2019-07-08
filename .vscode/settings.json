@@ -1,6 +1,8 @@
 {
   "editor.formatOnSave": true,
   "files.associations": {
-    "ruby.h": "c"
+    "ruby.h": "c",
+    "stdio.h": "c",
+    "config.h": "c"
   }
 }
