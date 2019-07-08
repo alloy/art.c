@@ -1,8 +1,10 @@
 #include <AssertMacros.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <CoreAudio/CoreAudio.h>
+#include <dispatch/dispatch.h>
 #include <ruby.h>
 
+static dispatch_queue_t _queue = NULL;
 static AUGraph graph = NULL;
 static AudioUnit synthUnit = NULL;
 static UInt8 midiChannelInUse = 0; // we're using midi channel 1...
@@ -55,7 +57,7 @@ enum {
   kMidiMessage_NoteOn = 0x9
 };
 
-static VALUE play_sound(VALUE self) {
+static void play_sound_impl(void) {
   OSStatus result;
   UInt32 noteNum = 60;
   UInt32 onVelocity = 127;
@@ -72,6 +74,13 @@ static VALUE play_sound(VALUE self) {
   __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, noteOnCommand, noteNum, 0, 0), home);
 
 home:
+  return;
+}
+
+static VALUE play_sound(VALUE self) {
+  dispatch_async(_queue, ^{
+    play_sound_impl();
+  });
   return Qnil;
 }
 
@@ -96,6 +105,9 @@ void Init_ArtC_sound() {
   // CAShow(graph);
 
   __Require_noErr(result = AUGraphStart(graph), home);
+
+  // create background queue from where sound will be played
+  _queue = dispatch_queue_create("artc.sound", DISPATCH_QUEUE_SERIAL);
 
   // ok we're done now
   VALUE mArtC = rb_const_get(rb_cObject, rb_intern("ArtC"));
