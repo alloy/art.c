@@ -1,3 +1,4 @@
+#include "ext.h"
 #include <assert.h>
 #include <dlfcn.h>
 #include <ruby.h>
@@ -7,7 +8,7 @@
 #define HTTP_STATUS_NOT_FOUND 404
 #define HTTP_STATUS_METHOD_NOT_ALLOWED 405
 
-void play_sound(void);
+static VALUE mArtC;
 
 /**
  * This is the `app` proc implementation.
@@ -34,7 +35,7 @@ static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, _)) {
     VALUE type = rb_hash_fetch(json, rb_str_new_cstr("type"));
     if (rb_str_equal(type, rb_str_new_cstr("page")) == Qtrue) {
       rb_p(json);
-      play_sound();
+      rb_funcall(mArtC, rb_intern("play_sound"), 0);
     }
   }
 
@@ -52,10 +53,7 @@ static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, _)) {
   return response;
 }
 
-void Init_ArtC_server(VALUE mArtC) {
-  rb_require("rack");
-  rb_require("json/ext");
-
+static VALUE start_server(VALUE self) {
   // Rack::Handler::WEBrick
   VALUE rb_mRack = rb_const_get(rb_cObject, rb_intern("Rack"));
   VALUE rb_mRackHandler = rb_const_get(rb_mRack, rb_intern("Handler"));
@@ -63,4 +61,14 @@ void Init_ArtC_server(VALUE mArtC) {
 
   // Rack::Handler::WEBrick.run(proc { … })
   rb_funcall(rb_cRackHandlerWEBrick, rb_intern("run"), 1, rb_proc_new(app, 0));
+
+  return Qnil;
+}
+
+void Init_ArtC_server(void) {
+  rb_require("rack");
+  rb_require("json/ext");
+
+  mArtC = rb_const_get(rb_cObject, rb_intern("ArtC"));
+  rb_define_singleton_method(mArtC, "start_server", start_server, 0);
 }

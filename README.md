@@ -1,13 +1,13 @@
-# ArtC
+# art.c
 
-Artsy in C major
+Artsy in C major and pure C Ruby, for no reason other than sentiment.
 
 https://twitter.com/alloy/status/613375165582417922
 
 # Installation
 
-1. On macOS you can use the system Ruby, but if you prefer a newer version of Ruby install one _with_ a dynamic (shared)
-   library product. E.g.:
+1. On macOS you can use the system Ruby, but if you prefer a newer version of
+   Ruby install one _with_ a dynamic (shared) library product. E.g.:
 
    ```bash
    $ ruby-install ruby 2.6.3 -- --enable-shared

@@ -1,32 +1,8 @@
+#include "ext.h"
 #include <assert.h>
 #include <dlfcn.h>
 #include <ruby.h>
 #include <stdio.h>
-
-void Init_ArtC_server(VALUE);
-void Init_ArtC_sound(VALUE);
-static void load_bundler_env(void);
-static void load_encoding_ext(void);
-
-int main(int argc, char *argv[]) {
-  ruby_init();
-  ruby_init_loadpath();
-
-  load_encoding_ext();
-  load_bundler_env();
-
-  // module ArtC; end
-  VALUE mArtC = rb_define_module("ArtC");
-
-  // Initialize other ArtC extensions
-  Init_ArtC_server(mArtC);
-  Init_ArtC_sound(mArtC);
-
-  // Let's dance
-  rb_funcall(mArtC, rb_intern("start_server"), 0);
-
-  return ruby_cleanup(0);
-}
 
 static void load_bundler_env(void) { rb_require("bundler/setup"); }
 
@@ -44,4 +20,24 @@ static void load_encoding_ext(void) {
   assert(encdb != NULL && "Failed to load encdb.bundle");
   void (*Init_encdb)(void) = dlsym(encdb, "Init_encdb");
   Init_encdb();
+}
+
+int main(int argc, char *argv[]) {
+  ruby_init();
+  ruby_init_loadpath();
+
+  load_encoding_ext();
+  load_bundler_env();
+
+  // module ArtC; end
+  VALUE mArtC = rb_define_module("ArtC");
+
+  // Initialize other ArtC extensions
+  Init_ArtC_server();
+  Init_ArtC_sound();
+
+  // Let's dance
+  rb_funcall(mArtC, rb_intern("start_server"), 0);
+
+  return ruby_cleanup(0);
 }
