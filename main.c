@@ -17,8 +17,19 @@ static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, _)) {
   VALUE is_post = rb_str_equal(request_method, rb_str_new_cstr("POST"));
   VALUE matches_route = rb_str_equal(request_path, rb_str_new_cstr("/webhooks/analytics"));
 
-  VALUE status = INT2FIX(is_post == Qfalse ? HTTP_STATUS_METHOD_NOT_ALLOWED
-                                           : (matches_route == Qtrue ? HTTP_STATUS_OK : HTTP_STATUS_NOT_FOUND));
+  int c_status = is_post == Qfalse ? HTTP_STATUS_METHOD_NOT_ALLOWED
+                                   : (matches_route == Qtrue ? HTTP_STATUS_OK : HTTP_STATUS_NOT_FOUND);
+
+  if (c_status == HTTP_STATUS_OK) {
+    // json = JSON.parse(env["rack.input"].read)
+    VALUE request_body_stream = rb_hash_fetch(env, rb_str_new_cstr("rack.input"));
+    VALUE request_body = rb_funcall(request_body_stream, rb_intern("read"), 0);
+    VALUE rb_mJSON = rb_const_get(rb_cObject, rb_intern("JSON"));
+    VALUE json = rb_funcall(rb_mJSON, rb_intern("parse"), 1, request_body);
+    rb_p(json);
+  }
+
+  VALUE status = INT2FIX(c_status);
   VALUE headers = rb_hash_new();
   VALUE body = rb_ary_new();
   rb_ary_push(body, rb_str_new_cstr("OK"));
@@ -53,6 +64,7 @@ int main(int argc, char *argv[]) {
   // Load gems
   rb_require("bundler/setup");
   rb_require("rack");
+  rb_require("json/ext");
 
   // Rack::Handler::WEBrick
   VALUE rb_mRack = rb_const_get(rb_cObject, rb_intern("Rack"));
