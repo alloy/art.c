@@ -3,22 +3,31 @@
 #include <ruby.h>
 #include <stdio.h>
 
+#define HTTP_STATUS_OK 200
+#define HTTP_STATUS_NOT_FOUND 404
+#define HTTP_STATUS_METHOD_NOT_ALLOWED 405
+
 /**
  * This is the `app` proc implementation.
  */
 static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, _)) {
-  // rb_p(env);
+  VALUE request_method = rb_hash_fetch(env, rb_str_new_cstr("REQUEST_METHOD"));
+  VALUE request_path = rb_hash_fetch(env, rb_str_new_cstr("PATH_INFO"));
 
-  VALUE status = INT2FIX(200);
+  VALUE is_post = rb_str_equal(request_method, rb_str_new_cstr("POST"));
+  VALUE matches_route = rb_str_equal(request_path, rb_str_new_cstr("/webhooks/analytics"));
+
+  VALUE status = INT2FIX(is_post == Qfalse ? HTTP_STATUS_METHOD_NOT_ALLOWED
+                                           : (matches_route == Qtrue ? HTTP_STATUS_OK : HTTP_STATUS_NOT_FOUND));
   VALUE headers = rb_hash_new();
   VALUE body = rb_ary_new();
-  rb_ary_push(body, rb_str_new_cstr("Hello world!"));
+  rb_ary_push(body, rb_str_new_cstr("OK"));
 
   VALUE response = rb_ary_new();
   rb_ary_push(response, status);
   rb_ary_push(response, headers);
   rb_ary_push(response, body);
-  // rb_p(response);
+  rb_p(response);
 
   return response;
 }
@@ -49,7 +58,6 @@ int main(int argc, char *argv[]) {
   VALUE rb_mRack = rb_const_get(rb_cObject, rb_intern("Rack"));
   VALUE rb_mRackHandler = rb_const_get(rb_mRack, rb_intern("Handler"));
   VALUE rb_cRackHandlerWEBrick = rb_const_get(rb_mRackHandler, rb_intern("WEBrick"));
-  rb_p(rb_cRackHandlerWEBrick);
 
   // Rack::Handler::WEBrick.run(proc { … })
   rb_funcall(rb_cRackHandlerWEBrick, rb_intern("run"), 1, rb_proc_new(app, 0));
