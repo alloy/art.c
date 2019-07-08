@@ -3,6 +3,26 @@
 #include <ruby.h>
 #include <stdio.h>
 
+/**
+ * This is the `app` proc implementation.
+ */
+static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, _)) {
+  // rb_p(env);
+
+  VALUE status = INT2FIX(200);
+  VALUE headers = rb_hash_new();
+  VALUE body = rb_ary_new();
+  rb_ary_push(body, rb_str_new_cstr("Hello world!"));
+
+  VALUE response = rb_ary_new();
+  rb_ary_push(response, status);
+  rb_ary_push(response, headers);
+  rb_ary_push(response, body);
+  // rb_p(response);
+
+  return response;
+}
+
 int main(int argc, char *argv[]) {
   ruby_init();
   ruby_init_loadpath();
@@ -25,13 +45,22 @@ int main(int argc, char *argv[]) {
   rb_require("bundler/setup");
   rb_require("rack");
 
-  int state;
-  VALUE result = rb_eval_string_protect("p Rack::Handler::WEBrick", &state);
-  if (state) {
-    VALUE exception = rb_errinfo();
-    rb_set_errinfo(Qnil);
-    rb_p(exception);
-  }
+  // Rack::Handler::WEBrick
+  VALUE rb_mRack = rb_const_get(rb_cObject, rb_intern("Rack"));
+  VALUE rb_mRackHandler = rb_const_get(rb_mRack, rb_intern("Handler"));
+  VALUE rb_cRackHandlerWEBrick = rb_const_get(rb_mRackHandler, rb_intern("WEBrick"));
+  rb_p(rb_cRackHandlerWEBrick);
+
+  // Rack::Handler::WEBrick.run(proc { … })
+  rb_funcall(rb_cRackHandlerWEBrick, rb_intern("run"), 1, rb_proc_new(app, 0));
+
+  // int state;
+  // VALUE result = rb_eval_string_protect("p Rack::Handler::WEBrick", &state);
+  // if (state) {
+  //   VALUE exception = rb_errinfo();
+  //   rb_set_errinfo(Qnil);
+  //   rb_p(exception);
+  // }
 
   return ruby_cleanup(0);
 }
