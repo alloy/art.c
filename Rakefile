@@ -13,7 +13,6 @@ namespace :dev do
       settings = JSON.parse(File.read("./.vscode/c_cpp_properties.json.example"))
       include_path = settings["configurations"][0]["includePath"]
       include_path.concat(INCLUDE)
-      include_path.concat(LINK_FRAMEWORKS.map)
       File.write("./.vscode/c_cpp_properties.json", JSON.pretty_generate(settings))
     end
   end
