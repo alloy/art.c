@@ -1,9 +1,10 @@
 # art.c
 
-Artsy analytics events observed in sound played in C major, using pure C Ruby
-for no reason other than sentiment.
+Activity in the Artsy universe observed through audible means in the C major scale and implemented in the C programming
+language–using the Ruby runtime for no reason other than sentiment about Artsy’s platform origins.
 
-https://twitter.com/alloy/status/613375165582417922
+All of Artsy’s analytics events go through segment.com, which in turn sends those aggregated events to the HTTP server
+in this project so it can turn those events into an audible representation.
 
 # Installation
 
