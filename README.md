@@ -48,16 +48,22 @@ their work.
 
 # Development
 
-1. Install `clang-format`:
+- Most-all communication in the app must be done through the Ruby runtime. I.e. rather than a C function call, expose
+  the C function as a Ruby method an invoke that instead.
 
-   ```bash
-   $ brew install clang-format
-   ```
+- Install `clang-format`:
 
-1. Bookmark https://silverhammermba.github.io/emberb/c/
+  ```bash
+  $ brew install clang-format
+  ```
 
-1. Perform request from fixture:
+- C Ruby reading:
 
-   ```bash
-   $ curl -i -X POST --data @fixtures/page.json http://localhost:8080/webhooks/analytics
-   ```
+  - https://github.com/ruby/ruby
+  - https://silverhammermba.github.io/emberb/c/
+
+- Perform request from fixture:
+
+  ```bash
+  $ curl -i -X POST --data @fixtures/page.json http://localhost:8080/webhooks/analytics
+  ```
