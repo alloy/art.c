@@ -6,6 +6,9 @@ language–using the Ruby runtime for no reason other than sentiment about Artsy
 All of Artsy’s analytics events go through segment.com, which in turn sends those aggregated events to the HTTP server
 in this project so it can turn those events into an audible representation.
 
+This is my entry for the 2019 edition of the Artsy Salon, an annual art exhibition in which Artsy employees show-case
+their work.
+
 # Installation
 
 1. On macOS you can use the system Ruby, but if you prefer a newer version of
