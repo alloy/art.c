@@ -8,8 +8,9 @@ language using the Ruby runtime API.
 This is my entry for the 2019 edition of the Artsy Salon, an annual art exhibition in which Artsy employees show-case
 their work.
 
-Artsy historically uses a lot of Ruby and so using it here is solely out of sentiment about Artsy’s platform origins and
-as a tribute to my life-long love for Ruby. It doesn't need to make sense, this is an art piece after all.
+Artsy historically uses a lot of Ruby and so using it’s runtime here is solely out of sentiment about Artsy’s platform
+origins and as a tribute to my life-long love for Ruby. To be clear, other than in the `Rakefile`, all Ruby is written
+using the C APIs of [Matz’s Ruby Interpreter][mri]. It doesn't need to make sense, this is an art piece after all.
 
 Finally, both as an homage and inspiration, I tried to use “What would [_why] do?” as a guiding principle.
 
@@ -87,3 +88,4 @@ based on the type of event that occurred.
 [coremidi]: https://developer.apple.com/documentation/coremidi?language=objc
 [gcd]: https://apple.github.io/swift-corelibs-libdispatch/
 [_why]: https://en.wikipedia.org/wiki/Why_the_lucky_stiff
+[mri]: https://en.wikipedia.org/wiki/Ruby_MRI
