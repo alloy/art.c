@@ -10,7 +10,7 @@ their work.
 
 Artsy historically uses a lot of Ruby and so using it’s runtime here is solely out of sentiment about Artsy’s platform
 origins and as a tribute to my life-long love for Ruby. To be clear, other than in the `Rakefile`, all Ruby is written
-using the C APIs of [Matz’s Ruby Interpreter][mri]. It doesn't need to make sense, this is an art piece after all.
+using only the C API of [Matz’s Ruby Interpreter][mri]. It doesn't need to make sense, this is an art piece after all.
 
 Finally, both as an homage and inspiration, I tried to use “What would [_why] do?” as a guiding principle.
 
