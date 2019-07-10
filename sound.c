@@ -7,7 +7,14 @@
 static dispatch_queue_t _queue = NULL;
 static AUGraph graph = NULL;
 static AudioUnit synthUnit = NULL;
-static UInt8 midiChannelInUse = 0; // we're using midi channel 1...
+
+enum {
+  kMidiProgram_Piano = 0,
+  kMidiProgram_WoodBlock = 12,
+  kMidiProgram_Bell = 14,
+};
+
+// static UInt8 MidiChannelMapping[] = {kMidiProgram_Piano, kMidiProgram_WoodBlock};
 
 // This call creates the Graph and the Synth unit...
 static OSStatus CreateAUGraph(AUGraph *outGraph, AudioUnit *outSynth) {
@@ -57,14 +64,14 @@ enum {
   kMidiMessage_NoteOn = 0x9
 };
 
-static void play_sound_impl(void) {
+static void play_sound_impl(unsigned long midi_channel) {
   OSStatus result;
   UInt32 noteNum = 60;
   UInt32 onVelocity = 127;
-  UInt32 noteOnCommand = kMidiMessage_NoteOn << 4 | midiChannelInUse;
+  UInt32 noteOnCommand = kMidiMessage_NoteOn << 4 | midi_channel;
 
-  printf("Playing Note: Status: 0x%lX, Note: %ld, Vel: %ld\n", (unsigned long)noteOnCommand, (unsigned long)noteNum,
-         (unsigned long)onVelocity);
+  // printf("Playing Note: Status: 0x%lX, Channel: %ld, Note: %ld, Vel: %ld\n", (unsigned long)noteOnCommand,
+  //        (unsigned long)midi_channel, (unsigned long)noteNum, (unsigned long)onVelocity);
 
   __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, noteOnCommand, noteNum, onVelocity, 0), home);
 
@@ -77,9 +84,10 @@ home:
   return;
 }
 
-static VALUE play_sound(VALUE self) {
+static VALUE play_sound(VALUE self, VALUE midi_channel) {
+  unsigned long mc = FIX2ULONG(midi_channel);
   dispatch_async(_queue, ^{
-    play_sound_impl();
+    play_sound_impl(mc);
   });
   return Qnil;
 }
@@ -94,11 +102,25 @@ void Init_ArtC_sound() {
   __Require_noErr(result = AUGraphInitialize(graph), home);
 
   // set our bank
-  __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, kMidiMessage_ControlChange << 4 | midiChannelInUse,
+  __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, kMidiMessage_ControlChange << 4 | 0,
                                                 kMidiMessage_BankMSBControl, 0, 0 /*sample offset*/),
                   home);
-  __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, kMidiMessage_ProgramChange << 4 | midiChannelInUse,
-                                                0 /*prog change num*/, 0, 0 /*sample offset*/),
+  __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, kMidiMessage_ProgramChange << 4 | 0, kMidiProgram_Piano, 0,
+                                                0 /*sample offset*/),
+                  home);
+
+  __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, kMidiMessage_ControlChange << 4 | 1,
+                                                kMidiMessage_BankMSBControl, 0, 0 /*sample offset*/),
+                  home);
+  __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, kMidiMessage_ProgramChange << 4 | 1,
+                                                kMidiProgram_WoodBlock /*prog change num*/, 0, 0 /*sample offset*/),
+                  home);
+
+  __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, kMidiMessage_ControlChange << 4 | 2,
+                                                kMidiMessage_BankMSBControl, 0, 0 /*sample offset*/),
+                  home);
+  __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, kMidiMessage_ProgramChange << 4 | 2, kMidiProgram_Bell, 0,
+                                                0 /*sample offset*/),
                   home);
 
   // prints out the graph so we can see what it looks like...
@@ -111,7 +133,7 @@ void Init_ArtC_sound() {
 
   // ok we're done now
   VALUE mArtC = rb_const_get(rb_cObject, rb_intern("ArtC"));
-  rb_define_singleton_method(mArtC, "play_sound", play_sound, 0);
+  rb_define_singleton_method(mArtC, "play_sound", play_sound, 1);
 
 home:
   return;
