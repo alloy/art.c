@@ -64,9 +64,38 @@ enum {
   kMidiMessage_NoteOn = 0x9
 };
 
+static UInt32 middle_c = 60;
+static UInt32 last_note_played = 0;
+
+static UInt32 scale_note_to_absolute(UInt32 note) {
+  switch (note) {
+  case 0:
+    return 0;
+  case 1:
+    return 2;
+  case 2:
+    return 4;
+  case 3:
+    return 5;
+  case 4:
+    return 7;
+  case 5:
+    return 9;
+  case 6:
+    return 11;
+  default:
+    return 0;
+  }
+}
+
 static void play_sound_impl(unsigned long midi_channel) {
+  last_note_played++;
+  if (last_note_played == 7) {
+    last_note_played = 0;
+  }
+
   OSStatus result;
-  UInt32 noteNum = 60;
+  UInt32 noteNum = middle_c + scale_note_to_absolute(last_note_played);
   UInt32 onVelocity = 127;
   UInt32 noteOnCommand = kMidiMessage_NoteOn << 4 | midi_channel;
 
