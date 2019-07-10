@@ -54,13 +54,13 @@ based on the type of event that occurred.
    $ rake -s
    ```
 
-1. If actually consuming events from a segment.com webhook, start ngrok:
+1. If actually consuming events from a segment.com webhook, start a forwarding tunnel from serveo.net:
 
    ```bash
-   $ ngrok http 8080
+   $ ssh -R my-example-subdomain:80:localhost:8080 serveo.net
    ```
 
-1. …and point the segment.com webhook to the published ngrok URL.
+1. …and point the segment.com webhook to it. E.g. `https://my-example-subdomain.serveo.net/webhooks/analytics`
 
 # Development
 
