@@ -1,12 +1,37 @@
 {
-  "channel": "server",
-  "email": "test@example.org",
-  "messageId": "test-message-uxxrgb",
-  "name": "Home Page",
-  "projectId": "oRx51HW70S",
-  "properties": { "property1": 1, "property2": "test", "property3": true },
-  "replay": true,
-  "timestamp": "2019-07-08T11:35:29.207Z",
+  "anonymousId": "e4996a91-57c8-40a0-976c-8a3f0d884327",
+  "category": null,
+  "context": {
+    "ip": "218.186.177.120",
+    "library": {
+      "name": "analytics.js",
+      "version": "3.8.2"
+    },
+    "page": {
+      "path": "/",
+      "referrer": "",
+      "search": "",
+      "title": "Artsy - Discover, Research, and Collect the World's Best Art Online",
+      "url": "https://www.artsy.net"
+    },
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1.1 Safari/605.1.15"
+  },
+  "integrations": {
+    "Marketo": false
+  },
+  "messageId": "ajs-01cb0fda92e195beb3e68204ea96ee60",
+  "name": null,
+  "originalTimestamp": "2019-07-10T10:46:53.026Z",
+  "properties": {
+    "path": "/",
+    "referrer": "",
+    "search": "",
+    "title": "Artsy - Discover, Research, and Collect the World's Best Art Online",
+    "url": "https://www.artsy.net"
+  },
+  "receivedAt": "2019-07-10T10:46:53.821Z",
+  "sentAt": "2019-07-10T10:46:53.028Z",
+  "timestamp": "2019-07-10T10:46:53.819Z",
   "type": "page",
-  "userId": "test-user-sly7aj"
+  "userId": null
 }

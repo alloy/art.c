@@ -42,7 +42,7 @@ static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, event_handler)) {
   rb_ary_push(response, status);
   rb_ary_push(response, headers);
   rb_ary_push(response, body);
-  rb_p(response);
+  // rb_p(response);
 
   return response;
 }
