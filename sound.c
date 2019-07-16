@@ -20,23 +20,17 @@ enum {
   kMidiMessage_NoteOn = 0x9
 };
 
+#pragma mark -
+#pragma mark Sound class
+
 struct SoundData {
   AUGraph graph;
   AudioUnit synth;
   dispatch_queue_t queue;
 };
 
-static void sound_free(struct SoundData *data) {
-  printf("[%s] HIER!\n", __FUNCTION__);
-  AUGraphStop(data->graph);
-  AUGraphUninitialize(data->graph);
-  AUGraphClose(data->graph);
-  DisposeAUGraph(data->graph);
-  dispatch_release(data->queue);
-  free(data);
-}
-
-static size_t sound_size(const void *data) { return sizeof(struct SoundData); }
+static void sound_free(struct SoundData *data);
+static size_t sound_size(const void *data);
 
 static const rb_data_type_t sound_type = {
     .wrap_struct_name = "sound",
@@ -50,75 +44,28 @@ static const rb_data_type_t sound_type = {
     .flags = RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
-static UInt32 middle_c = 60;
-static UInt32 last_note_played = 0;
+static size_t sound_size(const void *data) { return sizeof(struct SoundData); }
 
-static UInt32 scale_note_to_absolute(UInt32 note) {
-  switch (note) {
-  case 0:
-    return 0;
-  case 1:
-    return 2;
-  case 2:
-    return 4;
-  case 3:
-    return 5;
-  case 4:
-    return 7;
-  case 5:
-    return 9;
-  case 6:
-    return 11;
-  default:
-    return 0;
-  }
+static void sound_free(struct SoundData *data) {
+  AUGraphStop(data->graph);
+  AUGraphUninitialize(data->graph);
+  AUGraphClose(data->graph);
+  DisposeAUGraph(data->graph);
+  dispatch_release(data->queue);
+  free(data);
 }
 
-static void play_sound_impl(struct SoundData *data, unsigned long midi_channel) {
-  last_note_played++;
-  if (last_note_played == 7) {
-    last_note_played = 0;
-  }
-
-  UInt32 noteNum = middle_c + scale_note_to_absolute(last_note_played);
-  UInt32 onVelocity = 127;
-  UInt32 noteOnCommand = kMidiMessage_NoteOn << 4 | midi_channel;
-
-  // printf("Playing Note: Status: 0x%lX, Channel: %ld, Note: %ld, Vel: %ld\n", (unsigned long)noteOnCommand,
-  //        (unsigned long)midi_channel, (unsigned long)noteNum, (unsigned long)onVelocity);
-
-  OSStatus noteOnResult = MusicDeviceMIDIEvent(data->synth, noteOnCommand, noteNum, onVelocity, 0);
-  if (noteOnResult != 0) {
-    printf("[%s] ERROR: %d\n", __FUNCTION__, noteOnResult);
-    return;
-  }
-
-  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1 * NSEC_PER_SEC), data->queue, ^{
-    OSStatus noteOffResult = MusicDeviceMIDIEvent(data->synth, noteOnCommand, noteNum, 0, 0);
-    if (noteOffResult != 0) {
-      printf("[%s] ERROR: %d\n", __FUNCTION__, noteOffResult);
-      return;
-    }
-  });
-}
-
-static VALUE play_sound(VALUE self, VALUE midi_channel) {
-  struct SoundData *data;
-  TypedData_Get_Struct(self, struct SoundData, &sound_type, data);
-  unsigned long mc = FIX2ULONG(midi_channel);
-  dispatch_async(data->queue, ^{
-    play_sound_impl(data, mc);
-  });
-  return Qnil;
-}
-
-static VALUE play_channel_sound(VALUE self) {
-  VALUE sound = rb_ivar_get(self, rb_intern("sound"));
-  VALUE channel = rb_ivar_get(self, rb_intern("channel"));
-  rb_funcall(sound, rb_intern("play_sound"), 1, channel);
-  return Qnil;
-}
-
+/**
+ * module ArtC
+ *   class Sound
+ *     def self.allocate
+ *       # [No Ruby]
+ *       #
+ *       # Memory is allocated for the instance data and the AudioUnit graph/Grand Central Dispatch queue that it holds.
+ *     end
+ *   end
+ * end
+ */
 static VALUE sound_alloc(VALUE self) {
   struct SoundData *data = malloc(sizeof(struct SoundData));
   assert(data != NULL && "Failed to allocate SoundData");
@@ -166,6 +113,17 @@ home:
   return Qnil;
 }
 
+/**
+ * module ArtC
+ *   class Sound
+ *     def initialize
+ *       # [No Ruby]
+ *       #
+ *       # The CoreAudio graph is initialized and started.
+ *     end
+ *   end
+ * end
+ */
 static VALUE sound_initialize(VALUE self) {
   struct SoundData *data;
   TypedData_Get_Struct(self, struct SoundData, &sound_type, data);
@@ -184,18 +142,130 @@ home:
   return Qnil;
 }
 
-static VALUE get_channel(VALUE self, VALUE channel) {
+/**
+ * module ArtC
+ *   class Sound
+ *     def get_channel(channel)
+ *       Channel.new(self, channel)
+ *     end
+ *   end
+ * end
+ */
+static VALUE sound_get_channel(VALUE self, VALUE channel) {
   VALUE argv[2] = {self, channel};
   return rb_class_new_instance(2, argv, cSoundChannel);
 }
 
+static UInt32 middle_c = 60;
+static UInt32 last_note_played = 0;
+
+static UInt32 scale_note_to_absolute(UInt32 note) {
+  switch (note) {
+  case 0:
+    return 0;
+  case 1:
+    return 2;
+  case 2:
+    return 4;
+  case 3:
+    return 5;
+  case 4:
+    return 7;
+  case 5:
+    return 9;
+  case 6:
+    return 11;
+  default:
+    return 0;
+  }
+}
+
+/**
+ * [No Ruby]
+ *
+ * Sends a MIDI note-on event to `channel` of the `synth` and, by a slight delay, a note-off event.
+ */
+static void sound_play_impl(struct SoundData *data, unsigned long midi_channel) {
+  last_note_played++;
+  if (last_note_played == 7) {
+    last_note_played = 0;
+  }
+
+  UInt32 noteNum = middle_c + scale_note_to_absolute(last_note_played);
+  UInt32 onVelocity = 127;
+  UInt32 noteOnCommand = kMidiMessage_NoteOn << 4 | midi_channel;
+
+  // printf("Playing Note: Status: 0x%lX, Channel: %ld, Note: %ld, Vel: %ld\n", (unsigned long)noteOnCommand,
+  //        (unsigned long)midi_channel, (unsigned long)noteNum, (unsigned long)onVelocity);
+
+  OSStatus noteOnResult = MusicDeviceMIDIEvent(data->synth, noteOnCommand, noteNum, onVelocity, 0);
+  if (noteOnResult != 0) {
+    printf("[%s] ERROR: %d\n", __FUNCTION__, noteOnResult);
+    return;
+  }
+
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1 * NSEC_PER_SEC), data->queue, ^{
+    OSStatus noteOffResult = MusicDeviceMIDIEvent(data->synth, noteOnCommand, noteNum, 0, 0);
+    if (noteOffResult != 0) {
+      printf("[%s] ERROR: %d\n", __FUNCTION__, noteOffResult);
+      return;
+    }
+  });
+}
+
+/**
+ * module ArtC
+ *   class Sound
+ *     def play(channel)
+ *
+ *     end
+ *   end
+ * end
+ */
+static VALUE sound_play(VALUE self, VALUE midi_channel) {
+  struct SoundData *data;
+  TypedData_Get_Struct(self, struct SoundData, &sound_type, data);
+  unsigned long mc = FIX2ULONG(midi_channel);
+  dispatch_async(data->queue, ^{
+    sound_play_impl(data, mc);
+  });
+  return Qnil;
+}
+
+#pragma mark -
+#pragma mark Sound::Channel class
+
+/**
+ * module ArtC
+ *   class Sound
+ *     class Channel
+ *       def initialize(sound, channel)
+ *         @sound, @channel = sound, chanel
+ *       end
+ *     end
+ *   end
+ * end
+ */
 static VALUE sound_channel_initialize(VALUE self, VALUE sound, VALUE channel) {
   rb_ivar_set(self, rb_intern("sound"), sound);
   rb_ivar_set(self, rb_intern("channel"), channel);
   return self;
 }
 
-static VALUE set_channel_bank(VALUE self, VALUE bank) {
+/**
+ * module ArtC
+ *   class Sound
+ *     class Channel
+ *       def set_bank(bank)
+ *         # [No Ruby]
+ *         #
+ *         # Send MIDI events to configure the channel of the synth to use sound from `bank`.
+ *       end
+ *     end
+ *   end
+ * end
+ */
+static VALUE sound_channel_set_bank(VALUE self, VALUE bank) {
   OSStatus result;
 
   VALUE sound = rb_ivar_get(self, rb_intern("sound"));
@@ -217,17 +287,54 @@ home:
   return Qnil;
 }
 
+/**
+ * module ArtC
+ *   class Sound
+ *     class Channel
+ *       def play
+ *         @sound.play(@channel)
+ *       end
+ *     end
+ *   end
+ * end
+ */
+static VALUE sound_channel_play(VALUE self) {
+  VALUE sound = rb_ivar_get(self, rb_intern("sound"));
+  VALUE channel = rb_ivar_get(self, rb_intern("channel"));
+  rb_funcall(sound, rb_intern("play"), 1, channel);
+  return Qnil;
+}
+
+#pragma mark -
+#pragma mark Initialize C extension
+
+/**
+ * module ArtC
+ *   class Sound
+ *     def self.allocate; end
+ *     def initialize; end
+ *     def play(channel); end
+ *     def channel(channel); end
+ *
+ *     class Channel
+ *       def initialize; end
+ *       def set_bank; end
+ *       end play; end
+ *     end
+ *   end
+ * end
+ */
 void Init_ArtC_sound() {
   VALUE mArtC = rb_const_get(rb_cObject, rb_intern("ArtC"));
 
   VALUE cSound = rb_define_class_under(mArtC, "Sound", rb_cData);
   rb_define_alloc_func(cSound, sound_alloc);
   rb_define_method(cSound, "initialize", sound_initialize, 0);
-  rb_define_method(cSound, "play_sound", play_sound, 1);
-  rb_define_method(cSound, "channel", get_channel, 1);
+  rb_define_method(cSound, "play", sound_play, 1);
+  rb_define_method(cSound, "channel", sound_get_channel, 1);
 
   cSoundChannel = rb_define_class_under(cSound, "Channel", rb_cObject);
   rb_define_method(cSoundChannel, "initialize", sound_channel_initialize, 2);
-  rb_define_method(cSoundChannel, "set_bank", set_channel_bank, 1);
-  rb_define_method(cSoundChannel, "play", play_channel_sound, 0);
+  rb_define_method(cSoundChannel, "set_bank", sound_channel_set_bank, 1);
+  rb_define_method(cSoundChannel, "play", sound_channel_play, 0);
 }
