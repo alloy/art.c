@@ -4,6 +4,8 @@
 #include <dispatch/dispatch.h>
 #include <ruby.h>
 
+VALUE cSoundChannel;
+
 enum {
   kMidiProgram_Piano = 0,
   kMidiProgram_WoodBlock = 12,
@@ -110,6 +112,13 @@ static VALUE play_sound(VALUE self, VALUE midi_channel) {
   return Qnil;
 }
 
+static VALUE play_channel_sound(VALUE self) {
+  VALUE sound = rb_ivar_get(self, rb_intern("sound"));
+  VALUE channel = rb_ivar_get(self, rb_intern("channel"));
+  rb_funcall(sound, rb_intern("play_sound"), 1, channel);
+  return Qnil;
+}
+
 static VALUE sound_alloc(VALUE self) {
   struct SoundData *data = malloc(sizeof(struct SoundData));
   assert(data != NULL && "Failed to allocate SoundData");
@@ -164,33 +173,10 @@ static VALUE sound_initialize(VALUE self) {
   OSStatus result;
 
   __Require_noErr(result = AUGraphInitialize(data->graph), home);
-
-  // Configure channel instruments
-  __Require_noErr(result = MusicDeviceMIDIEvent(data->synth, kMidiMessage_ControlChange << 4 | 0,
-                                                kMidiMessage_BankMSBControl, 0, 0 /*sample offset*/),
-                  home);
-  __Require_noErr(result = MusicDeviceMIDIEvent(data->synth, kMidiMessage_ProgramChange << 4 | 0, kMidiProgram_Piano, 0,
-                                                0 /*sample offset*/),
-                  home);
-
-  __Require_noErr(result = MusicDeviceMIDIEvent(data->synth, kMidiMessage_ControlChange << 4 | 1,
-                                                kMidiMessage_BankMSBControl, 0, 0 /*sample offset*/),
-                  home);
-  __Require_noErr(result = MusicDeviceMIDIEvent(data->synth, kMidiMessage_ProgramChange << 4 | 1,
-                                                kMidiProgram_WoodBlock /*prog change num*/, 0, 0 /*sample offset*/),
-                  home);
-
-  __Require_noErr(result = MusicDeviceMIDIEvent(data->synth, kMidiMessage_ControlChange << 4 | 2,
-                                                kMidiMessage_BankMSBControl, 0, 0 /*sample offset*/),
-                  home);
-  __Require_noErr(result = MusicDeviceMIDIEvent(data->synth, kMidiMessage_ProgramChange << 4 | 2, kMidiProgram_Bell, 0,
-                                                0 /*sample offset*/),
-                  home);
+  __Require_noErr(result = AUGraphStart(data->graph), home);
 
   // prints out the graph so we can see what it looks like...
   // CAShow(graph);
-
-  __Require_noErr(result = AUGraphStart(data->graph), home);
 
   return self;
 home:
@@ -198,11 +184,50 @@ home:
   return Qnil;
 }
 
+static VALUE get_channel(VALUE self, VALUE channel) {
+  VALUE argv[2] = {self, channel};
+  return rb_class_new_instance(2, argv, cSoundChannel);
+}
+
+static VALUE sound_channel_initialize(VALUE self, VALUE sound, VALUE channel) {
+  rb_ivar_set(self, rb_intern("sound"), sound);
+  rb_ivar_set(self, rb_intern("channel"), channel);
+  return self;
+}
+
+static VALUE set_channel_bank(VALUE self, VALUE bank) {
+  OSStatus result;
+
+  VALUE sound = rb_ivar_get(self, rb_intern("sound"));
+  int channel = FIX2INT(rb_ivar_get(self, rb_intern("channel")));
+
+  struct SoundData *data;
+  TypedData_Get_Struct(sound, struct SoundData, &sound_type, data);
+
+  __Require_noErr(result = MusicDeviceMIDIEvent(data->synth, kMidiMessage_ControlChange << 4 | channel,
+                                                kMidiMessage_BankMSBControl, 0, 0 /*sample offset*/),
+                  home);
+  __Require_noErr(result = MusicDeviceMIDIEvent(data->synth, kMidiMessage_ProgramChange << 4 | channel, FIX2INT(bank),
+                                                0, 0 /*sample offset*/),
+                  home);
+
+  return Qnil;
+home:
+  printf("[%s] ERROR: %d\n", __FUNCTION__, result);
+  return Qnil;
+}
+
 void Init_ArtC_sound() {
-  // ok we're done now
   VALUE mArtC = rb_const_get(rb_cObject, rb_intern("ArtC"));
+
   VALUE cSound = rb_define_class_under(mArtC, "Sound", rb_cData);
   rb_define_alloc_func(cSound, sound_alloc);
   rb_define_method(cSound, "initialize", sound_initialize, 0);
   rb_define_method(cSound, "play_sound", play_sound, 1);
+  rb_define_method(cSound, "channel", get_channel, 1);
+
+  cSoundChannel = rb_define_class_under(cSound, "Channel", rb_cObject);
+  rb_define_method(cSoundChannel, "initialize", sound_channel_initialize, 2);
+  rb_define_method(cSoundChannel, "set_bank", set_channel_bank, 1);
+  rb_define_method(cSoundChannel, "play", play_channel_sound, 0);
 }
