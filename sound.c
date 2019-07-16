@@ -51,7 +51,9 @@ static OSStatus CreateAUGraph(AUGraph *outGraph, AudioUnit *outSynth) {
   // ok we're good to go - get the Synth Unit...
   __Require_noErr(result = AUGraphNodeInfo(*outGraph, synthNode, 0, outSynth), home);
 
+  return result;
 home:
+  printf("[%s] ERROR: %d\n", __FUNCTION__, result);
   return result;
 }
 
@@ -94,7 +96,6 @@ static void play_sound_impl(unsigned long midi_channel) {
     last_note_played = 0;
   }
 
-  OSStatus result;
   UInt32 noteNum = middle_c + scale_note_to_absolute(last_note_played);
   UInt32 onVelocity = 127;
   UInt32 noteOnCommand = kMidiMessage_NoteOn << 4 | midi_channel;
@@ -102,15 +103,19 @@ static void play_sound_impl(unsigned long midi_channel) {
   // printf("Playing Note: Status: 0x%lX, Channel: %ld, Note: %ld, Vel: %ld\n", (unsigned long)noteOnCommand,
   //        (unsigned long)midi_channel, (unsigned long)noteNum, (unsigned long)onVelocity);
 
-  __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, noteOnCommand, noteNum, onVelocity, 0), home);
+  OSStatus noteOnResult = MusicDeviceMIDIEvent(synthUnit, noteOnCommand, noteNum, onVelocity, 0);
+  if (noteOnResult != 0) {
+    printf("[%s] ERROR: %d\n", __FUNCTION__, noteOnResult);
+    return;
+  }
 
-  int ms = 1 * 1000;
-  usleep(ms * 100);
-
-  __Require_noErr(result = MusicDeviceMIDIEvent(synthUnit, noteOnCommand, noteNum, 0, 0), home);
-
-home:
-  return;
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1 * NSEC_PER_SEC), _queue, ^{
+    OSStatus noteOffResult = MusicDeviceMIDIEvent(synthUnit, noteOnCommand, noteNum, 0, 0);
+    if (noteOffResult != 0) {
+      printf("[%s] ERROR: %d\n", __FUNCTION__, noteOffResult);
+      return;
+    }
+  });
 }
 
 static VALUE play_sound(VALUE self, VALUE midi_channel) {
@@ -164,6 +169,8 @@ void Init_ArtC_sound() {
   VALUE mArtC = rb_const_get(rb_cObject, rb_intern("ArtC"));
   rb_define_singleton_method(mArtC, "play_sound", play_sound, 1);
 
+  return;
 home:
+  printf("[%s] ERROR: %d\n", __FUNCTION__, result);
   return;
 }
