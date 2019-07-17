@@ -1,18 +1,20 @@
 # art.c: The Artsy universe in C major and C Ruby.
 
-Activity in the Artsy universe observed through audible means in the C major scale and implemented in the C programming
-language using the Ruby runtime API.
+This program plays musical notes in the major C scale in near real-time as users interact with artsy.net. If you are
+lucky enough–or are actually bidding/offering/buying a work while reading this 🤘–you may even hear a bell being struck.
 
 ## Why?
 
 This is my entry for the 2019 edition of the Artsy Salon, an annual art exhibition in which Artsy employees show-case
 their work.
 
-Artsy historically uses a lot of Ruby and so using it’s runtime here is solely out of sentiment about Artsy’s platform
-origins and as a tribute to my life-long love for Ruby. To be clear, other than in the `Rakefile`, all Ruby is written
-using only the C API of [Matz’s Ruby Interpreter][mri]. It doesn't need to make sense, this is an art piece after all.
+Artsy historically uses the Ruby programming language a lot, as such using it’s VM (virtual machine) here is solely out
+of sentiment about Artsy’s platform origins and as a tribute to my life-long love for Ruby. However, being inspired by
+Ruby’s long-lost artist ‘[\_why the lucky stiff][_why]’ I couldn’t simply write Ruby, instead the entire Ruby program is
+written in the C programming language using Ruby’s C programming interface.
 
-Finally, both as an homage and inspiration, I tried to use “What would [_why] do?” as a guiding principle.
+There is no good reason to do this, other than to question yourself how things really work. Taking the mechanics of a
+‘reality’ (such as a VM) for granted is limiting to one’s understanding of the space it lives in.
 
 ## How?
 
