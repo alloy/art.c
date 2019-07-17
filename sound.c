@@ -7,12 +7,6 @@
 static VALUE cSoundChannel;
 
 enum {
-  kMidiProgram_Piano = 0,
-  kMidiProgram_WoodBlock = 12,
-  kMidiProgram_Bell = 14,
-};
-
-enum {
   kMidiMessage_ControlChange = 0xB,
   kMidiMessage_ProgramChange = 0xC,
   kMidiMessage_BankMSBControl = 0,
