@@ -318,7 +318,7 @@ static VALUE sound_channel_play(VALUE self) {
  *
  *     class Channel
  *       def initialize; end
- *       def set_bank; end
+ *       def bank=(bank); end
  *       end play; end
  *     end
  *   end
@@ -335,6 +335,6 @@ void Init_ArtC_sound() {
 
   cSoundChannel = rb_define_class_under(cSound, "Channel", rb_cObject);
   rb_define_method(cSoundChannel, "initialize", sound_channel_initialize, 2);
-  rb_define_method(cSoundChannel, "set_bank", sound_channel_set_bank, 1);
+  rb_define_method(cSoundChannel, "bank=", sound_channel_set_bank, 1);
   rb_define_method(cSoundChannel, "play", sound_channel_play, 0);
 }

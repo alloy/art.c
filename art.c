@@ -53,13 +53,13 @@ static VALUE handle_event(RB_BLOCK_CALL_FUNC_ARGLIST(payload, sound_palette)) {
  * sound = ArtC::Sound.new
  *
  * piano = sound.channel(0)
- * piano.set_bank(0)
+ * piano.bank = 0
  *
  * wood_block = sound.channel(1)
- * wood_block.set_bank(12)
+ * wood_block.bank = 12
  *
  * bell = sound.channel(2)
- * bell.set_bank(14)
+ * bell.bank = 14
  *
  * SoundPalette = Struct.new(:piano, :wood_block, :bell)
  * sound_palette = SoundPalette.new(piano, wood_block, bell)
@@ -73,13 +73,13 @@ static void lets_dance(void) {
   VALUE sound = rb_class_new_instance(0, NULL, cSound);
 
   VALUE piano = rb_funcall(sound, rb_intern("channel"), 1, INT2FIX(0));
-  rb_funcall(piano, rb_intern("set_bank"), 1, INT2FIX(0));
+  rb_funcall(piano, rb_intern("bank="), 1, INT2FIX(0));
 
   VALUE wood_block = rb_funcall(sound, rb_intern("channel"), 1, INT2FIX(1));
-  rb_funcall(wood_block, rb_intern("set_bank"), 1, INT2FIX(12));
+  rb_funcall(wood_block, rb_intern("bank="), 1, INT2FIX(12));
 
   VALUE bell = rb_funcall(sound, rb_intern("channel"), 1, INT2FIX(2));
-  rb_funcall(bell, rb_intern("set_bank"), 1, INT2FIX(14));
+  rb_funcall(bell, rb_intern("bank="), 1, INT2FIX(14));
 
   VALUE cSoundPalette = rb_struct_define(NULL, "piano", "wood_block", "bell", NULL);
   VALUE channels[3] = {piano, wood_block, bell};
