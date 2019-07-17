@@ -1,4 +1,4 @@
-# art.c
+# art.c: The Artsy universe in C major and C Ruby.
 
 Activity in the Artsy universe observed through audible means in the C major scale and implemented in the C programming
 language using the Ruby runtime API.
