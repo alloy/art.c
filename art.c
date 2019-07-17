@@ -7,46 +7,69 @@
 static VALUE mArtC;
 
 /**
- * This could be expanded a lot on. Really, there should be some fireworks for when somebody makes a bid, an offer, and
- * especially when they win a lot or buy now.
- *
  * handle_event = proc do |payload, sound_palette|
  *   type = payload["type"]
  *   if type == "track"
- *     include_list = ["Artwork impressions"]
- *     if include_list.includes?(payload["event"])
+ *     event = payload["event"]
+ *     if event == "Artwork impressions"
  *       velocity = payload["userId"] == nil ? 80 : 127
  *       sound_palette.bass.play(velocity)
+ *     else
+ *       include_list = ["Clicked \"Bid\"", "Clicked buy now", "Clicked make offer"]
+ *       if include_list.includes?(event)
+ *         sound_palette.bell.play(127)
+ *       end
  *     end
+ *     puts "EVENT TRACK: #{event}"
  *   elsif type == "page"
  *     sound_palette.xylophone.play(127)
+ *     puts "EVENT PAGE: #{payload["properties"]["path"].inspect}"
  *   elsif type == "identify"
- *     sound_palette.bell.play(127)
+ *     collector_level = payload["traits"]["collector_level"] || 0
+ *     velocity = collector_level == 0 ? 70 : collector_level == 1 ? 90 : collector_level == 2 ? 110 : 127
+ *     sound_palette.bell.play(velocity)
+ *     puts "EVENT IDENTIFY: #{collector_level}"
  *   end
  *   nil
  * end
  */
 static VALUE handle_event(RB_BLOCK_CALL_FUNC_ARGLIST(payload, sound_palette)) {
   VALUE type = rb_hash_fetch(payload, rb_str_new_cstr("type"));
+  // Track
   if (rb_str_equal(type, rb_str_new_cstr("track")) == Qtrue) {
-    VALUE include_list = rb_ary_new();
-    rb_ary_push(include_list, rb_str_new_cstr("Artwork impressions"));
     VALUE event = rb_hash_fetch(payload, rb_str_new_cstr("event"));
-    if (rb_ary_includes(include_list, event) == Qtrue) {
+    if (rb_str_equal(event, rb_str_new_cstr("Artwork impressions")) == Qtrue) {
       int velocity = rb_hash_fetch(payload, rb_str_new_cstr("userId")) == Qnil ? 80 : 127;
       rb_funcall(rb_funcall(sound_palette, rb_intern("bass"), 0), rb_intern("play"), 1, INT2FIX(velocity));
-      printf("EVENT TRACK: %s\n", StringValuePtr(event));
+    } else {
+      VALUE include_list = rb_ary_new();
+      rb_ary_push(include_list, rb_str_new_cstr("Clicked \"Bid\""));
+      rb_ary_push(include_list, rb_str_new_cstr("Clicked buy now"));
+      rb_ary_push(include_list, rb_str_new_cstr("Clicked make offer"));
+      if (rb_ary_includes(include_list, event) == Qtrue) {
+        rb_funcall(rb_funcall(sound_palette, rb_intern("bell"), 0), rb_intern("play"), 1, INT2FIX(127));
+      }
     }
-  } else if (rb_str_equal(type, rb_str_new_cstr("page")) == Qtrue) {
+    printf("EVENT TRACK: %s\n", StringValuePtr(event));
+  }
+  // Page
+  else if (rb_str_equal(type, rb_str_new_cstr("page")) == Qtrue) {
     rb_funcall(rb_funcall(sound_palette, rb_intern("xylophone"), 0), rb_intern("play"), 1, INT2FIX(127));
+
     VALUE properties = rb_hash_fetch(payload, rb_str_new_cstr("properties"));
     VALUE path = rb_hash_fetch(properties, rb_str_new_cstr("path"));
     VALUE path_str = rb_inspect(path);
     printf("EVENT PAGE: %s\n", StringValuePtr(path_str));
-  } else if (rb_str_equal(type, rb_str_new_cstr("identify")) == Qtrue) {
-    rb_funcall(rb_funcall(sound_palette, rb_intern("bell"), 0), rb_intern("play"), 1, INT2FIX(127));
+  }
+  // Identify
+  else if (rb_str_equal(type, rb_str_new_cstr("identify")) == Qtrue) {
     VALUE traits = rb_hash_fetch(payload, rb_str_new_cstr("traits"));
     VALUE collector_level = rb_hash_fetch(traits, rb_str_new_cstr("collector_level"));
+
+    int cl = collector_level == Qnil ? 0 : FIX2INT(collector_level);
+    int velocity = cl == 0 ? 70 : cl == 1 ? 90 : cl == 2 ? 110 : 127;
+    rb_funcall(rb_funcall(sound_palette, rb_intern("harp"), 0), rb_intern("play"), 1, INT2FIX(velocity));
+
     VALUE collector_level_str = rb_inspect(collector_level);
     printf("EVENT IDENTIFY: %s\n", StringValuePtr(collector_level_str));
   }
@@ -86,9 +109,12 @@ static void lets_dance(void) {
   VALUE bell = rb_funcall(sound, rb_intern("channel"), 2, INT2FIX(2), INT2FIX(1));
   rb_funcall(bell, rb_intern("bank="), 1, INT2FIX(14));
 
-  VALUE cSoundPalette = rb_struct_define(NULL, "bass", "xylophone", "bell", NULL);
-  VALUE channels[3] = {bass, xylophone, bell};
-  VALUE sound_palette = rb_class_new_instance(3, channels, cSoundPalette);
+  VALUE harp = rb_funcall(sound, rb_intern("channel"), 2, INT2FIX(3), INT2FIX(0));
+  rb_funcall(harp, rb_intern("bank="), 1, INT2FIX(46));
+
+  VALUE cSoundPalette = rb_struct_define(NULL, "bass", "xylophone", "harp", "bell", NULL);
+  VALUE channels[4] = {bass, xylophone, harp, bell};
+  VALUE sound_palette = rb_class_new_instance(4, channels, cSoundPalette);
 
   rb_funcall_with_block(mArtC, rb_intern("start_server"), 0, NULL, rb_proc_new(handle_event, sound_palette));
 }
