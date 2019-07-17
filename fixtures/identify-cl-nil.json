@@ -25,11 +25,10 @@
   "sentAt": "2019-07-08T21:26:49.698Z",
   "timestamp": "2019-07-08T21:26:49.880Z",
   "traits": {
-    "collector_level": 1,
+    "collector_level": null,
     "email": "eloy.de.enige@gmail.com",
     "id": "547c73d57261692d83d70000",
     "name": "Eloy Durán",
-    "phone": "+31681664814",
     "session_id": "cda47650-3576-11e7-861b-a7f082e22efc",
     "type": "User"
   },

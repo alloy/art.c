@@ -1,0 +1,38 @@
+{
+  "_metadata": {
+    "bundled": ["Google Analytics", "Segment.io"],
+    "unbundled": []
+  },
+  "anonymousId": "f09ff3a1-5a38-4c68-b37f-dbaf390f0e02",
+  "channel": "client",
+  "context": {
+    "ip": "77.251.154.6",
+    "library": { "name": "analytics.js", "version": "3.8.2" },
+    "page": {
+      "path": "/orders/5f0eb3ea-8661-42f5-87c2-4631a967a3d1/shipping",
+      "referrer": "https://staging.artsy.net/artwork/ron-louque-barrows-goldeneye",
+      "search": "",
+      "title": "Checkout | Artsy",
+      "url": "https://staging.artsy.net/orders/5f0eb3ea-8661-42f5-87c2-4631a967a3d1/shipping"
+    },
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0.3 Safari/605.1.15"
+  },
+  "integrations": { "Marketo": false },
+  "messageId": "ajs-bba6a66298829d80998613913a969db7",
+  "originalTimestamp": "2019-07-08T21:26:49.693Z",
+  "projectId": "oRx51HW70S",
+  "receivedAt": "2019-07-08T21:26:49.885Z",
+  "sentAt": "2019-07-08T21:26:49.698Z",
+  "timestamp": "2019-07-08T21:26:49.880Z",
+  "traits": {
+    "collector_level": 3,
+    "email": "eloy.de.enige@gmail.com",
+    "id": "547c73d57261692d83d70000",
+    "name": "Eloy Durán",
+    "session_id": "cda47650-3576-11e7-861b-a7f082e22efc",
+    "type": "User"
+  },
+  "type": "identify",
+  "userId": "547c73d57261692d83d70000",
+  "version": 2
+}

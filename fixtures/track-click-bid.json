@@ -1,0 +1,37 @@
+{
+  "_metadata": {
+    "bundled": ["Google Analytics", "Segment.io"],
+    "unbundled": []
+  },
+  "anonymousId": "f09ff3a1-5a38-4c68-b37f-dbaf390f0e02",
+  "channel": "client",
+  "context": {
+    "ip": "77.251.154.6",
+    "library": { "name": "analytics.js", "version": "3.8.2" },
+    "page": {
+      "path": "/artwork/ron-louque-barrows-goldeneye",
+      "referrer": "https://staging.artsy.net/artwork/ron-louque-barrows-goldeneye",
+      "search": "",
+      "title": "Ron Louque | Barrow's Goldeneye (1989) | Available for Sale | Artsy",
+      "url": "https://staging.artsy.net/artwork/ron-louque-barrows-goldeneye"
+    },
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0.3 Safari/605.1.15"
+  },
+  "event": "Clicked \"Bid\"",
+  "integrations": {},
+  "messageId": "ajs-62404ce4a5866b1dc3c8fb381aed5e34",
+  "originalTimestamp": "2019-07-08T21:24:43.348Z",
+  "projectId": "oRx51HW70S",
+  "properties": {
+    "artwork_id": "5abbe7be9c18db0deaa0c01a",
+    "artwork_slug": "ron-louque-barrows-goldeneye",
+    "flow": "Make offer",
+    "type": "Button"
+  },
+  "receivedAt": "2019-07-08T21:24:43.543Z",
+  "sentAt": "2019-07-08T21:24:43.352Z",
+  "timestamp": "2019-07-08T21:24:43.539Z",
+  "type": "track",
+  "userId": "547c73d57261692d83d70000",
+  "version": 2
+}

@@ -3,6 +3,8 @@
   "files.associations": {
     "ruby.h": "c",
     "stdio.h": "c",
-    "config.h": "c"
+    "config.h": "c",
+    "__config": "c",
+    "__nullptr": "c"
   }
 }

@@ -17,7 +17,7 @@
     },
     "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0.3 Safari/605.1.15"
   },
-  "event": "Clicked rail on homepage",
+  "event": "Artwork impressions",
   "integrations": {},
   "messageId": "ajs-ae66fc13bfb57ceb34e6963fe9905f96",
   "originalTimestamp": "2019-07-08T21:19:29.629Z",
@@ -35,6 +35,6 @@
   "sentAt": "2019-07-08T21:19:29.633Z",
   "timestamp": "2019-07-08T21:19:29.808Z",
   "type": "track",
-  "userId": "547c73d57261692d83d70000",
+  "userId": null,
   "version": 2
 }
