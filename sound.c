@@ -23,15 +23,43 @@ enum {
 #pragma mark -
 #pragma mark Sound class
 
+/**
+ * The struct we will use as the Sound class' native instance variable and which holds references to the various native
+ * bits we need.
+ */
 struct SoundData {
   AUGraph graph;
   AudioUnit synth;
   dispatch_queue_t queue;
 };
 
-static void sound_free(struct SoundData *data);
-static size_t sound_size(const void *data);
+/**
+ * Tell Ruby the memory size of our native instance variable.
+ */
+static size_t sound_size(const void *data) { return sizeof(struct SoundData); }
 
+/**
+ * [No Ruby]
+ *
+ * The instance of the Sound class is deallocated and so should the native data it has a reference to. We’re doing that
+ * from the queue to ensure that any `sound_play_impl` invocations that were still scheduled will not lead to crashes.
+ *
+ * We can safely release the queue right away, though, as scheduled tasks will retain their queue themselves.
+ */
+static void sound_free(struct SoundData *data) {
+  dispatch_async(data->queue, ^{
+    AUGraphStop(data->graph);
+    AUGraphUninitialize(data->graph);
+    AUGraphClose(data->graph);
+    DisposeAUGraph(data->graph);
+    free(data);
+  });
+  dispatch_release(data->queue);
+}
+
+/**
+ * Describes the native Ruby instance variable that will hold our `struct SoundData` data.
+ */
 static const rb_data_type_t sound_type = {
     .wrap_struct_name = "sound",
     .function =
@@ -44,24 +72,14 @@ static const rb_data_type_t sound_type = {
     .flags = RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
-static size_t sound_size(const void *data) { return sizeof(struct SoundData); }
-
-static void sound_free(struct SoundData *data) {
-  AUGraphStop(data->graph);
-  AUGraphUninitialize(data->graph);
-  AUGraphClose(data->graph);
-  DisposeAUGraph(data->graph);
-  dispatch_release(data->queue);
-  free(data);
-}
-
 /**
  * module ArtC
  *   class Sound
  *     def self.allocate
  *       # [No Ruby]
  *       #
- *       # Memory is allocated for the instance data and the AudioUnit graph/Grand Central Dispatch queue that it holds.
+ *       # Memory is allocated for the instance data and the AudioUnit graph/Grand Central Dispatch queue that it holds
+ *       # and a native Ruby instance variable `data` that holds it all is returned.
  *     end
  *   end
  * end
@@ -71,42 +89,45 @@ static VALUE sound_alloc(VALUE self) {
   assert(data != NULL && "Failed to allocate SoundData");
 
   OSStatus result;
-
-  // create the nodes of the graph
   AUNode synthNode, limiterNode, outNode;
-
   AudioComponentDescription cd;
+
   cd.componentManufacturer = kAudioUnitManufacturer_Apple;
   cd.componentFlags = 0;
   cd.componentFlagsMask = 0;
 
+  // Create graph
   __Require_noErr(result = NewAUGraph(&data->graph), home);
 
+  // Add a synth
   cd.componentType = kAudioUnitType_MusicDevice;
   cd.componentSubType = kAudioUnitSubType_DLSSynth;
-
   __Require_noErr(result = AUGraphAddNode(data->graph, &cd, &synthNode), home);
 
+  // Add a (volume) limiter effect
   cd.componentType = kAudioUnitType_Effect;
   cd.componentSubType = kAudioUnitSubType_PeakLimiter;
-
   __Require_noErr(result = AUGraphAddNode(data->graph, &cd, &limiterNode), home);
 
+  // Add an output device
   cd.componentType = kAudioUnitType_Output;
   cd.componentSubType = kAudioUnitSubType_DefaultOutput;
   __Require_noErr(result = AUGraphAddNode(data->graph, &cd, &outNode), home);
 
+  // 'Open' the graph
   __Require_noErr(result = AUGraphOpen(data->graph), home);
 
+  // Connect the nodes: synth->limiter->output
   __Require_noErr(result = AUGraphConnectNodeInput(data->graph, synthNode, 0, limiterNode, 0), home);
   __Require_noErr(result = AUGraphConnectNodeInput(data->graph, limiterNode, 0, outNode, 0), home);
 
-  // ok we're good to go - get the Synth Unit...
+  // Ok we're good to go–get a reference to the synth unit
   __Require_noErr(result = AUGraphNodeInfo(data->graph, synthNode, 0, &data->synth), home);
 
-  // create background queue from where sound will be played
+  // Create a background queue from where MIDI events will be sent
   data->queue = dispatch_queue_create("artc.sound", DISPATCH_QUEUE_SERIAL);
 
+  // Wrap our native Ruby instance variable and return it
   return TypedData_Wrap_Struct(self, &sound_type, data);
 home:
   printf("[%s] ERROR: %d\n", __FUNCTION__, result);
@@ -119,7 +140,8 @@ home:
  *     def initialize
  *       # [No Ruby]
  *       #
- *       # The CoreAudio graph is initialized and started.
+ *       # The CoreAudio graph is initialized and started. This is all stored in a native Ruby instance variable `data`
+ *       # of type `struct SoundData`.
  *     end
  *   end
  * end
@@ -183,7 +205,7 @@ static UInt32 scale_note_to_absolute(UInt32 note) {
 /**
  * [No Ruby]
  *
- * Sends a MIDI note-on event to `channel` of the `synth` and, by a slight delay, a note-off event.
+ * Sends a MIDI note-on event to `channel` of the `synth` and schedules, by a slight delay, a note-off event.
  */
 static void sound_play_impl(struct SoundData *data, unsigned long midi_channel) {
   last_note_played++;
@@ -217,7 +239,9 @@ static void sound_play_impl(struct SoundData *data, unsigned long midi_channel) 
  * module ArtC
  *   class Sound
  *     def play(channel)
- *
+ *       # [No Ruby]
+ *       #
+ *       # A pure C function is scheduled to be invoked on a background thread.
  *     end
  *   end
  * end

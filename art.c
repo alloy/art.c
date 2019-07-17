@@ -23,7 +23,6 @@ static VALUE mArtC;
  * end
  */
 static VALUE handle_event(RB_BLOCK_CALL_FUNC_ARGLIST(payload, sound_palette)) {
-  // rb_p(payload);
   VALUE type = rb_hash_fetch(payload, rb_str_new_cstr("type"));
   if (rb_str_equal(type, rb_str_new_cstr("track")) == Qtrue) {
     VALUE ignore_list = rb_ary_new();
@@ -85,16 +84,15 @@ static void lets_dance(void) {
   VALUE channels[3] = {piano, wood_block, bell};
   VALUE sound_palette = rb_class_new_instance(3, channels, cSoundPalette);
 
-  // rb_p(sound_palette);
-
   rb_funcall_with_block(mArtC, rb_intern("start_server"), 0, NULL, rb_proc_new(handle_event, sound_palette));
 }
 
 /**
  * require "rbconfig"
+ *
  * extdir = RbConfig::CONFIG["rubyarchdir"]
  * encbundle = File.join(extdir, "enc/encdb.bundle")
- * require encbundle
+ * load encbundle
  */
 static void load_encoding_ext(void) {
   // Get location of native extensions for current Ruby
@@ -130,10 +128,8 @@ int main(int argc, char *argv[]) {
   load_encoding_ext();
   rb_require("bundler/setup");
 
-  // module ArtC; end
   mArtC = rb_define_module("ArtC");
 
-  // Initialize other ArtC extensions
   Init_ArtC_server();
   Init_ArtC_sound();
 

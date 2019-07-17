@@ -1,8 +1,5 @@
 #include "ext.h"
-#include <assert.h>
-#include <dlfcn.h>
 #include <ruby.h>
-#include <stdio.h>
 
 #define HTTP_STATUS_OK 200
 #define HTTP_STATUS_NOT_FOUND 404
@@ -49,7 +46,6 @@ static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, event_handler)) {
   rb_ary_push(response, INT2FIX(status));
   rb_ary_push(response, headers);
   rb_ary_push(response, body);
-  // rb_p(response);
 
   return response;
 }
@@ -62,12 +58,10 @@ static VALUE app(RB_BLOCK_CALL_FUNC_ARGLIST(env, event_handler)) {
 static VALUE start_server(VALUE self) {
   VALUE event_handler = rb_block_proc();
 
-  // Rack::Handler::WEBrick
   VALUE rb_mRack = rb_const_get(rb_cObject, rb_intern("Rack"));
   VALUE rb_mRackHandler = rb_const_get(rb_mRack, rb_intern("Handler"));
   VALUE rb_cRackHandlerWEBrick = rb_const_get(rb_mRackHandler, rb_intern("WEBrick"));
 
-  // Rack::Handler::WEBrick.run(proc { … })
   rb_funcall(rb_cRackHandlerWEBrick, rb_intern("run"), 1, rb_proc_new(app, event_handler));
 
   return Qnil;
@@ -80,8 +74,8 @@ static VALUE start_server(VALUE self) {
  * require "rack"
  * require "json/ext"
  *
- * def ArtC.start_server
- *   # See above
+ * module ArtC
+ *   def self.start_server; end
  * end
  */
 void Init_ArtC_server(void) {

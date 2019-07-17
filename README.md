@@ -77,6 +77,7 @@ based on the type of event that occurred.
 
   - https://github.com/ruby/ruby
   - https://silverhammermba.github.io/emberb/c/
+  - `rb_p(…)` is your `p` friend that you can use to inspect `VALUE` objects, i.e. Ruby objects
 
 - Perform request from fixture:
 
