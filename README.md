@@ -69,18 +69,16 @@ based on the type of event that occurred.
    $ autossh -M 0 -R my-example-subdomain:80:localhost:8080 serveo.net
    ```
 
-````
-
 # Development
 
 - Most-all communication in the app must be done through the Ruby runtime. I.e. rather than a C function call, expose
-the C function as a Ruby method an invoke that instead.
+  the C function as a Ruby method an invoke that instead.
 
 - Install `clang-format`:
 
 ```bash
 $ brew install clang-format
-````
+```
 
 - C Ruby reading:
 
