@@ -167,8 +167,8 @@ home:
 /**
  * module ArtC
  *   class Sound
- *     def get_channel(channel)
- *       Channel.new(self, channel)
+ *     def channel(channel, octave)
+ *       Channel.new(self, channel, octave)
  *     end
  *   end
  * end
@@ -183,14 +183,14 @@ static VALUE sound_get_channel(VALUE self, VALUE channel, VALUE octave) {
  *
  * Sends a MIDI note-on event to `channel` of the `synth` and schedules, by a slight delay, a note-off event.
  */
-static void sound_play_impl(struct SoundData *data, unsigned long midi_channel, unsigned int note) {
-  UInt32 onVelocity = 127;
+static void sound_play_impl(struct SoundData *data, unsigned long midi_channel, unsigned int note,
+                            unsigned int velocity) {
   UInt32 noteOnCommand = kMidiMessage_NoteOn << 4 | midi_channel;
 
   // printf("Playing Note: Status: 0x%lX, Channel: %ld, Note: %ld, Vel: %ld\n", (unsigned long)noteOnCommand,
-  //        (unsigned long)midi_channel, (unsigned long)note, (unsigned long)onVelocity);
+  //        (unsigned long)midi_channel, (unsigned long)note, (unsigned long)velocity);
 
-  OSStatus noteOnResult = MusicDeviceMIDIEvent(data->synth, noteOnCommand, note, onVelocity, 0);
+  OSStatus noteOnResult = MusicDeviceMIDIEvent(data->synth, noteOnCommand, note, velocity, 0);
   if (noteOnResult != 0) {
     printf("[%s] ERROR: %d\n", __FUNCTION__, noteOnResult);
     return;
@@ -208,7 +208,7 @@ static void sound_play_impl(struct SoundData *data, unsigned long midi_channel, 
 /**
  * module ArtC
  *   class Sound
- *     def play(channel, note)
+ *     def play(channel, note, velocity)
  *       # [No Ruby]
  *       #
  *       # A pure C function is scheduled to be invoked on a background thread.
@@ -216,13 +216,14 @@ static void sound_play_impl(struct SoundData *data, unsigned long midi_channel, 
  *   end
  * end
  */
-static VALUE sound_play(VALUE self, VALUE midi_channel, VALUE note) {
+static VALUE sound_play(VALUE self, VALUE midi_channel, VALUE note, VALUE velocity) {
   struct SoundData *data;
   TypedData_Get_Struct(self, struct SoundData, &sound_type, data);
   unsigned long c = FIX2ULONG(midi_channel);
   unsigned int n = FIX2UINT(note);
+  unsigned int v = FIX2UINT(velocity);
   dispatch_async(data->queue, ^{
-    sound_play_impl(data, c, n);
+    sound_play_impl(data, c, n, v);
   });
   return Qnil;
 }
@@ -293,16 +294,16 @@ home:
  * module ArtC
  *   class Sound
  *     class Channel
- *       def play
+ *       def play(velocity)
  *         @last_played_note = (@last_played_note + 1) % 7
  *         absolute_note_to_play = scale_note_to_absolute(@last_played_note) + @octave_offset
- *         @sound.play(@channel, absolute_note_to_play)
+ *         @sound.play(@channel, absolute_note_to_play, velocity)
  *       end
  *     end
  *   end
  * end
  */
-static VALUE sound_channel_play(VALUE self) {
+static VALUE sound_channel_play(VALUE self, VALUE velocity) {
   int last_played_note = FIX2INT(rb_ivar_get(self, rb_intern("last_played_note")));
   VALUE scale_note = INT2FIX((last_played_note + 1) % 7);
   rb_ivar_set(self, rb_intern("last_played_note"), scale_note);
@@ -313,7 +314,7 @@ static VALUE sound_channel_play(VALUE self) {
 
   VALUE sound = rb_ivar_get(self, rb_intern("sound"));
   VALUE channel = rb_ivar_get(self, rb_intern("channel"));
-  rb_funcall(sound, rb_intern("play"), 2, channel, absolute_note_to_play);
+  rb_funcall(sound, rb_intern("play"), 3, channel, absolute_note_to_play, velocity);
 
   return Qnil;
 }
@@ -373,13 +374,13 @@ static VALUE sound_channel_scale_note_to_absolute(VALUE self, VALUE note) {
  *   class Sound
  *     def self.allocate; end
  *     def initialize; end
- *     def play(channel); end
- *     def channel(channel); end
+ *     def play(channel, note, velocity); end
+ *     def channel(channel, octave); end
  *
  *     class Channel
- *       def initialize; end
+ *       def initialize(sound, channel, octave); end
  *       def bank=(bank); end
- *       end play; end
+ *       end play(velocity); end
  *       private
  *       def scale_note_to_absolute(note); end
  *     end
@@ -392,12 +393,12 @@ void Init_ArtC_sound() {
   VALUE cSound = rb_define_class_under(mArtC, "Sound", rb_cData);
   rb_define_alloc_func(cSound, sound_alloc);
   rb_define_method(cSound, "initialize", sound_initialize, 0);
-  rb_define_method(cSound, "play", sound_play, 2);
+  rb_define_method(cSound, "play", sound_play, 3);
   rb_define_method(cSound, "channel", sound_get_channel, 2);
 
   cSoundChannel = rb_define_class_under(cSound, "Channel", rb_cObject);
   rb_define_method(cSoundChannel, "initialize", sound_channel_initialize, 3);
   rb_define_method(cSoundChannel, "bank=", sound_channel_set_bank, 1);
-  rb_define_method(cSoundChannel, "play", sound_channel_play, 0);
+  rb_define_method(cSoundChannel, "play", sound_channel_play, 1);
   rb_define_private_method(cSoundChannel, "scale_note_to_absolute", sound_channel_scale_note_to_absolute, 1);
 }

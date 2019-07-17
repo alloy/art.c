@@ -10,14 +10,15 @@ static VALUE mArtC;
  * handle_event = proc do |payload, sound_palette|
  *   type = payload["type"]
  *   if type == "track"
- *     ignore_list = ["Time on page"]
- *     if !ignore_list.includes?(payload["event"])
- *       sound_palette.bass.play
+ *     include_list = ["Artwork impressions"]
+ *     if include_list.includes?(payload["event"])
+ *       velocity = payload["userId"] == nil ? 80 : 127
+ *       sound_palette.bass.play(velocity)
  *     end
  *   elsif type == "page"
- *     sound_palette.wood_block.play
+ *     sound_palette.wood_block.play(127)
  *   elsif type == "identify"
- *     sound_palette.bell.play
+ *     sound_palette.bell.play(127)
  *   end
  *   nil
  * end
@@ -25,21 +26,23 @@ static VALUE mArtC;
 static VALUE handle_event(RB_BLOCK_CALL_FUNC_ARGLIST(payload, sound_palette)) {
   VALUE type = rb_hash_fetch(payload, rb_str_new_cstr("type"));
   if (rb_str_equal(type, rb_str_new_cstr("track")) == Qtrue) {
-    VALUE ignore_list = rb_ary_new();
-    rb_ary_push(ignore_list, rb_str_new_cstr("Time on page"));
+    VALUE include_list = rb_ary_new();
+    // TODO: This could be expanded a lot on.
+    rb_ary_push(include_list, rb_str_new_cstr("Artwork impressions"));
     VALUE event = rb_hash_fetch(payload, rb_str_new_cstr("event"));
-    if (rb_ary_includes(ignore_list, event) == Qfalse) {
-      rb_funcall(rb_funcall(sound_palette, rb_intern("piano"), 0), rb_intern("play"), 0);
+    if (rb_ary_includes(include_list, event) == Qtrue) {
+      int velocity = rb_hash_fetch(payload, rb_str_new_cstr("userId")) == Qnil ? 80 : 127;
+      rb_funcall(rb_funcall(sound_palette, rb_intern("bass"), 0), rb_intern("play"), 1, INT2FIX(velocity));
       printf("EVENT TRACK: %s\n", StringValuePtr(event));
     }
   } else if (rb_str_equal(type, rb_str_new_cstr("page")) == Qtrue) {
-    rb_funcall(rb_funcall(sound_palette, rb_intern("wood_block"), 0), rb_intern("play"), 0);
+    rb_funcall(rb_funcall(sound_palette, rb_intern("wood_block"), 0), rb_intern("play"), 1, INT2FIX(127));
     VALUE properties = rb_hash_fetch(payload, rb_str_new_cstr("properties"));
     VALUE path = rb_hash_fetch(properties, rb_str_new_cstr("path"));
     VALUE path_str = rb_inspect(path);
     printf("EVENT PAGE: %s\n", StringValuePtr(path_str));
   } else if (rb_str_equal(type, rb_str_new_cstr("identify")) == Qtrue) {
-    rb_funcall(rb_funcall(sound_palette, rb_intern("bell"), 0), rb_intern("play"), 0);
+    rb_funcall(rb_funcall(sound_palette, rb_intern("bell"), 0), rb_intern("play"), 1, INT2FIX(127));
     VALUE traits = rb_hash_fetch(payload, rb_str_new_cstr("traits"));
     VALUE collector_level = rb_hash_fetch(traits, rb_str_new_cstr("collector_level"));
     VALUE collector_level_str = rb_inspect(collector_level);
