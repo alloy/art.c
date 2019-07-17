@@ -62,16 +62,25 @@ based on the type of event that occurred.
 
 1. …and point the segment.com webhook to it. E.g. `https://my-example-subdomain.serveo.net/webhooks/analytics`
 
+1. When letting this run for extended periods, it is best to use `autossh` as it will automatically reconnect.
+
+   ```bash
+   $ brew install autossh
+   $ autossh -M 0 -R my-example-subdomain:80:localhost:8080 serveo.net
+   ```
+
+````
+
 # Development
 
 - Most-all communication in the app must be done through the Ruby runtime. I.e. rather than a C function call, expose
-  the C function as a Ruby method an invoke that instead.
+the C function as a Ruby method an invoke that instead.
 
 - Install `clang-format`:
 
-  ```bash
-  $ brew install clang-format
-  ```
+```bash
+$ brew install clang-format
+````
 
 - C Ruby reading:
 
