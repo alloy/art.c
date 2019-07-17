@@ -7,6 +7,9 @@
 static VALUE mArtC;
 
 /**
+ * This could be expanded a lot on. Really, there should be some fireworks for when somebody makes a bid, an offer, and
+ * especially when they win a lot or buy now.
+ *
  * handle_event = proc do |payload, sound_palette|
  *   type = payload["type"]
  *   if type == "track"
@@ -16,7 +19,7 @@ static VALUE mArtC;
  *       sound_palette.bass.play(velocity)
  *     end
  *   elsif type == "page"
- *     sound_palette.wood_block.play(127)
+ *     sound_palette.xylophone.play(127)
  *   elsif type == "identify"
  *     sound_palette.bell.play(127)
  *   end
@@ -27,7 +30,6 @@ static VALUE handle_event(RB_BLOCK_CALL_FUNC_ARGLIST(payload, sound_palette)) {
   VALUE type = rb_hash_fetch(payload, rb_str_new_cstr("type"));
   if (rb_str_equal(type, rb_str_new_cstr("track")) == Qtrue) {
     VALUE include_list = rb_ary_new();
-    // TODO: This could be expanded a lot on.
     rb_ary_push(include_list, rb_str_new_cstr("Artwork impressions"));
     VALUE event = rb_hash_fetch(payload, rb_str_new_cstr("event"));
     if (rb_ary_includes(include_list, event) == Qtrue) {
@@ -36,7 +38,7 @@ static VALUE handle_event(RB_BLOCK_CALL_FUNC_ARGLIST(payload, sound_palette)) {
       printf("EVENT TRACK: %s\n", StringValuePtr(event));
     }
   } else if (rb_str_equal(type, rb_str_new_cstr("page")) == Qtrue) {
-    rb_funcall(rb_funcall(sound_palette, rb_intern("wood_block"), 0), rb_intern("play"), 1, INT2FIX(127));
+    rb_funcall(rb_funcall(sound_palette, rb_intern("xylophone"), 0), rb_intern("play"), 1, INT2FIX(127));
     VALUE properties = rb_hash_fetch(payload, rb_str_new_cstr("properties"));
     VALUE path = rb_hash_fetch(properties, rb_str_new_cstr("path"));
     VALUE path_str = rb_inspect(path);
@@ -57,14 +59,14 @@ static VALUE handle_event(RB_BLOCK_CALL_FUNC_ARGLIST(payload, sound_palette)) {
  * bass = sound.channel(0)
  * bass.bank = 0
  *
- * wood_block = sound.channel(1)
- * wood_block.bank = 12
+ * xylophone = sound.channel(1)
+ * xylophone.bank = 12
  *
  * bell = sound.channel(2)
  * bell.bank = 14
  *
- * SoundPalette = Struct.new(:bass, :wood_block, :bell)
- * sound_palette = SoundPalette.new(bass, wood_block, bell)
+ * SoundPalette = Struct.new(:bass, :xylophone, :bell)
+ * sound_palette = SoundPalette.new(bass, xylophone, bell)
  *
  * ArtC.start_server do |payload|
  *   handle_event.call(payload, sound_palette)
@@ -78,14 +80,14 @@ static void lets_dance(void) {
   // 2, 4, 8, 10, 15, 16, 17, 19, 21, 23, 24, 26, 27, 32, 33, 38/-1
   rb_funcall(bass, rb_intern("bank="), 1, INT2FIX(45));
 
-  VALUE wood_block = rb_funcall(sound, rb_intern("channel"), 2, INT2FIX(1), INT2FIX(0));
-  rb_funcall(wood_block, rb_intern("bank="), 1, INT2FIX(12));
+  VALUE xylophone = rb_funcall(sound, rb_intern("channel"), 2, INT2FIX(1), INT2FIX(0));
+  rb_funcall(xylophone, rb_intern("bank="), 1, INT2FIX(12));
 
   VALUE bell = rb_funcall(sound, rb_intern("channel"), 2, INT2FIX(2), INT2FIX(1));
   rb_funcall(bell, rb_intern("bank="), 1, INT2FIX(14));
 
-  VALUE cSoundPalette = rb_struct_define(NULL, "bass", "wood_block", "bell", NULL);
-  VALUE channels[3] = {bass, wood_block, bell};
+  VALUE cSoundPalette = rb_struct_define(NULL, "bass", "xylophone", "bell", NULL);
+  VALUE channels[3] = {bass, xylophone, bell};
   VALUE sound_palette = rb_class_new_instance(3, channels, cSoundPalette);
 
   rb_funcall_with_block(mArtC, rb_intern("start_server"), 0, NULL, rb_proc_new(handle_event, sound_palette));
