@@ -4,7 +4,8 @@
 #include <dispatch/dispatch.h>
 #include <ruby.h>
 
-VALUE cSoundChannel;
+static VALUE cSoundChannel;
+static unsigned int middle_c = 60;
 
 enum {
   kMidiProgram_Piano = 0,
@@ -178,56 +179,26 @@ static VALUE sound_get_channel(VALUE self, VALUE channel) {
   return rb_class_new_instance(2, argv, cSoundChannel);
 }
 
-static UInt32 middle_c = 60;
-static UInt32 last_note_played = 0;
-
-static UInt32 scale_note_to_absolute(UInt32 note) {
-  switch (note) {
-  case 0:
-    return 0;
-  case 1:
-    return 2;
-  case 2:
-    return 4;
-  case 3:
-    return 5;
-  case 4:
-    return 7;
-  case 5:
-    return 9;
-  case 6:
-    return 11;
-  default:
-    return 0;
-  }
-}
-
 /**
  * [No Ruby]
  *
  * Sends a MIDI note-on event to `channel` of the `synth` and schedules, by a slight delay, a note-off event.
  */
-static void sound_play_impl(struct SoundData *data, unsigned long midi_channel) {
-  last_note_played++;
-  if (last_note_played == 7) {
-    last_note_played = 0;
-  }
-
-  UInt32 noteNum = middle_c + scale_note_to_absolute(last_note_played);
+static void sound_play_impl(struct SoundData *data, unsigned long midi_channel, unsigned int note) {
   UInt32 onVelocity = 127;
   UInt32 noteOnCommand = kMidiMessage_NoteOn << 4 | midi_channel;
 
   // printf("Playing Note: Status: 0x%lX, Channel: %ld, Note: %ld, Vel: %ld\n", (unsigned long)noteOnCommand,
-  //        (unsigned long)midi_channel, (unsigned long)noteNum, (unsigned long)onVelocity);
+  //        (unsigned long)midi_channel, (unsigned long)note, (unsigned long)onVelocity);
 
-  OSStatus noteOnResult = MusicDeviceMIDIEvent(data->synth, noteOnCommand, noteNum, onVelocity, 0);
+  OSStatus noteOnResult = MusicDeviceMIDIEvent(data->synth, noteOnCommand, note, onVelocity, 0);
   if (noteOnResult != 0) {
     printf("[%s] ERROR: %d\n", __FUNCTION__, noteOnResult);
     return;
   }
 
   dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1 * NSEC_PER_SEC), data->queue, ^{
-    OSStatus noteOffResult = MusicDeviceMIDIEvent(data->synth, noteOnCommand, noteNum, 0, 0);
+    OSStatus noteOffResult = MusicDeviceMIDIEvent(data->synth, noteOnCommand, note, 0, 0);
     if (noteOffResult != 0) {
       printf("[%s] ERROR: %d\n", __FUNCTION__, noteOffResult);
       return;
@@ -238,7 +209,7 @@ static void sound_play_impl(struct SoundData *data, unsigned long midi_channel) 
 /**
  * module ArtC
  *   class Sound
- *     def play(channel)
+ *     def play(channel, note)
  *       # [No Ruby]
  *       #
  *       # A pure C function is scheduled to be invoked on a background thread.
@@ -246,12 +217,13 @@ static void sound_play_impl(struct SoundData *data, unsigned long midi_channel) 
  *   end
  * end
  */
-static VALUE sound_play(VALUE self, VALUE midi_channel) {
+static VALUE sound_play(VALUE self, VALUE midi_channel, VALUE note) {
   struct SoundData *data;
   TypedData_Get_Struct(self, struct SoundData, &sound_type, data);
-  unsigned long mc = FIX2ULONG(midi_channel);
+  unsigned long c = FIX2ULONG(midi_channel);
+  unsigned int n = FIX2UINT(note);
   dispatch_async(data->queue, ^{
-    sound_play_impl(data, mc);
+    sound_play_impl(data, c, n);
   });
   return Qnil;
 }
@@ -264,7 +236,7 @@ static VALUE sound_play(VALUE self, VALUE midi_channel) {
  *   class Sound
  *     class Channel
  *       def initialize(sound, channel)
- *         @sound, @channel = sound, chanel
+ *         @sound, @channel, @last_played_note = sound, chanel, 0
  *       end
  *     end
  *   end
@@ -273,6 +245,7 @@ static VALUE sound_play(VALUE self, VALUE midi_channel) {
 static VALUE sound_channel_initialize(VALUE self, VALUE sound, VALUE channel) {
   rb_ivar_set(self, rb_intern("sound"), sound);
   rb_ivar_set(self, rb_intern("channel"), channel);
+  rb_ivar_set(self, rb_intern("last_played_note"), INT2FIX(0));
   return self;
 }
 
@@ -280,7 +253,7 @@ static VALUE sound_channel_initialize(VALUE self, VALUE sound, VALUE channel) {
  * module ArtC
  *   class Sound
  *     class Channel
- *       def set_bank(bank)
+ *       def bank=(bank)
  *         # [No Ruby]
  *         #
  *         # Send MIDI events to configure the channel of the synth to use sound from `bank`.
@@ -316,17 +289,73 @@ home:
  *   class Sound
  *     class Channel
  *       def play
- *         @sound.play(@channel)
+ *         @last_played_note = (@last_played_note + 1) % 7
+ *         absolute_note_to_play = scale_note_to_absolute(@last_played_note) + middle_c
+ *         @sound.play(@channel, absolute_note_to_play)
  *       end
  *     end
  *   end
  * end
  */
 static VALUE sound_channel_play(VALUE self) {
+  int last_played_note = FIX2INT(rb_ivar_get(self, rb_intern("last_played_note")));
+  VALUE scale_note = INT2FIX((last_played_note + 1) % 7);
+  rb_ivar_set(self, rb_intern("last_played_note"), scale_note);
+  VALUE absolute_note = rb_funcall(self, rb_intern("scale_note_to_absolute"), 1, scale_note);
+  VALUE absolute_note_to_play = INT2FIX(FIX2INT(absolute_note) + middle_c);
+
   VALUE sound = rb_ivar_get(self, rb_intern("sound"));
   VALUE channel = rb_ivar_get(self, rb_intern("channel"));
-  rb_funcall(sound, rb_intern("play"), 1, channel);
+  rb_funcall(sound, rb_intern("play"), 2, channel, absolute_note_to_play);
+
   return Qnil;
+}
+
+/**
+ * Takes a note in the C major scale and converts it to the absolute note.
+ *
+ * module ArtC
+ *   class Sound
+ *     class Channel
+ *
+ *       private
+ *
+ *       def scale_note_to_absolute(note)
+ *         case note
+ *         when 0 then 0
+ *         when 1 then 2
+ *         when 2 then 4
+ *         when 3 then 5
+ *         when 4 then 7
+ *         when 5 then 9
+ *         when 6 then 11
+ *         else
+ *           0
+ *         end
+ *       end
+ *     end
+ *   end
+ * end
+ */
+static VALUE sound_channel_scale_note_to_absolute(VALUE self, VALUE note) {
+  switch (FIX2INT(note)) {
+  case 0:
+    return INT2FIX(0);
+  case 1:
+    return INT2FIX(2);
+  case 2:
+    return INT2FIX(4);
+  case 3:
+    return INT2FIX(5);
+  case 4:
+    return INT2FIX(7);
+  case 5:
+    return INT2FIX(9);
+  case 6:
+    return INT2FIX(11);
+  default:
+    return INT2FIX(0);
+  }
 }
 
 #pragma mark -
@@ -344,6 +373,8 @@ static VALUE sound_channel_play(VALUE self) {
  *       def initialize; end
  *       def bank=(bank); end
  *       end play; end
+ *       private
+ *       def scale_note_to_absolute(note); end
  *     end
  *   end
  * end
@@ -354,11 +385,12 @@ void Init_ArtC_sound() {
   VALUE cSound = rb_define_class_under(mArtC, "Sound", rb_cData);
   rb_define_alloc_func(cSound, sound_alloc);
   rb_define_method(cSound, "initialize", sound_initialize, 0);
-  rb_define_method(cSound, "play", sound_play, 1);
+  rb_define_method(cSound, "play", sound_play, 2);
   rb_define_method(cSound, "channel", sound_get_channel, 1);
 
   cSoundChannel = rb_define_class_under(cSound, "Channel", rb_cObject);
   rb_define_method(cSoundChannel, "initialize", sound_channel_initialize, 2);
   rb_define_method(cSoundChannel, "bank=", sound_channel_set_bank, 1);
   rb_define_method(cSoundChannel, "play", sound_channel_play, 0);
+  rb_define_private_method(cSoundChannel, "scale_note_to_absolute", sound_channel_scale_note_to_absolute, 1);
 }
