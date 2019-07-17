@@ -12,7 +12,7 @@ static VALUE mArtC;
  *   if type == "track"
  *     ignore_list = ["Time on page"]
  *     if !ignore_list.includes?(payload["event"])
- *       sound_palette.piano.play
+ *       sound_palette.bass.play
  *     end
  *   elsif type == "page"
  *     sound_palette.wood_block.play
@@ -51,8 +51,8 @@ static VALUE handle_event(RB_BLOCK_CALL_FUNC_ARGLIST(payload, sound_palette)) {
 /**
  * sound = ArtC::Sound.new
  *
- * piano = sound.channel(0)
- * piano.bank = 0
+ * bass = sound.channel(0)
+ * bass.bank = 0
  *
  * wood_block = sound.channel(1)
  * wood_block.bank = 12
@@ -60,8 +60,8 @@ static VALUE handle_event(RB_BLOCK_CALL_FUNC_ARGLIST(payload, sound_palette)) {
  * bell = sound.channel(2)
  * bell.bank = 14
  *
- * SoundPalette = Struct.new(:piano, :wood_block, :bell)
- * sound_palette = SoundPalette.new(piano, wood_block, bell)
+ * SoundPalette = Struct.new(:bass, :wood_block, :bell)
+ * sound_palette = SoundPalette.new(bass, wood_block, bell)
  *
  * ArtC.start_server do |payload|
  *   handle_event.call(payload, sound_palette)
@@ -71,17 +71,18 @@ static void lets_dance(void) {
   VALUE cSound = rb_const_get(mArtC, rb_intern("Sound"));
   VALUE sound = rb_class_new_instance(0, NULL, cSound);
 
-  VALUE piano = rb_funcall(sound, rb_intern("channel"), 1, INT2FIX(0));
-  rb_funcall(piano, rb_intern("bank="), 1, INT2FIX(0));
+  VALUE bass = rb_funcall(sound, rb_intern("channel"), 2, INT2FIX(0), INT2FIX(-2));
+  // 2, 4, 8, 10, 15, 16, 17, 19, 21, 23, 24, 26, 27, 32, 33, 38/-1
+  rb_funcall(bass, rb_intern("bank="), 1, INT2FIX(45));
 
-  VALUE wood_block = rb_funcall(sound, rb_intern("channel"), 1, INT2FIX(1));
+  VALUE wood_block = rb_funcall(sound, rb_intern("channel"), 2, INT2FIX(1), INT2FIX(0));
   rb_funcall(wood_block, rb_intern("bank="), 1, INT2FIX(12));
 
-  VALUE bell = rb_funcall(sound, rb_intern("channel"), 1, INT2FIX(2));
+  VALUE bell = rb_funcall(sound, rb_intern("channel"), 2, INT2FIX(2), INT2FIX(1));
   rb_funcall(bell, rb_intern("bank="), 1, INT2FIX(14));
 
-  VALUE cSoundPalette = rb_struct_define(NULL, "piano", "wood_block", "bell", NULL);
-  VALUE channels[3] = {piano, wood_block, bell};
+  VALUE cSoundPalette = rb_struct_define(NULL, "bass", "wood_block", "bell", NULL);
+  VALUE channels[3] = {bass, wood_block, bell};
   VALUE sound_palette = rb_class_new_instance(3, channels, cSoundPalette);
 
   rb_funcall_with_block(mArtC, rb_intern("start_server"), 0, NULL, rb_proc_new(handle_event, sound_palette));

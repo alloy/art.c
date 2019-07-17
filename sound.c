@@ -5,7 +5,6 @@
 #include <ruby.h>
 
 static VALUE cSoundChannel;
-static unsigned int middle_c = 60;
 
 enum {
   kMidiProgram_Piano = 0,
@@ -174,9 +173,9 @@ home:
  *   end
  * end
  */
-static VALUE sound_get_channel(VALUE self, VALUE channel) {
-  VALUE argv[2] = {self, channel};
-  return rb_class_new_instance(2, argv, cSoundChannel);
+static VALUE sound_get_channel(VALUE self, VALUE channel, VALUE octave) {
+  VALUE argv[3] = {self, channel, octave};
+  return rb_class_new_instance(3, argv, cSoundChannel);
 }
 
 /**
@@ -235,17 +234,23 @@ static VALUE sound_play(VALUE self, VALUE midi_channel, VALUE note) {
  * module ArtC
  *   class Sound
  *     class Channel
- *       def initialize(sound, channel)
+ *       def initialize(sound, channel, octave)
  *         @sound, @channel, @last_played_note = sound, chanel, 0
+ *         @octave_offset = (octave * 12) + 60 # middle C is at 60
  *       end
  *     end
  *   end
  * end
  */
-static VALUE sound_channel_initialize(VALUE self, VALUE sound, VALUE channel) {
+static VALUE sound_channel_initialize(VALUE self, VALUE sound, VALUE channel, VALUE octave) {
   rb_ivar_set(self, rb_intern("sound"), sound);
   rb_ivar_set(self, rb_intern("channel"), channel);
   rb_ivar_set(self, rb_intern("last_played_note"), INT2FIX(0));
+
+  // middle C is at 60
+  VALUE octave_offset = INT2FIX((FIX2INT(octave) * 12) + 60);
+  rb_ivar_set(self, rb_intern("octave_offset"), octave_offset);
+
   return self;
 }
 
@@ -290,7 +295,7 @@ home:
  *     class Channel
  *       def play
  *         @last_played_note = (@last_played_note + 1) % 7
- *         absolute_note_to_play = scale_note_to_absolute(@last_played_note) + middle_c
+ *         absolute_note_to_play = scale_note_to_absolute(@last_played_note) + @octave_offset
  *         @sound.play(@channel, absolute_note_to_play)
  *       end
  *     end
@@ -302,7 +307,9 @@ static VALUE sound_channel_play(VALUE self) {
   VALUE scale_note = INT2FIX((last_played_note + 1) % 7);
   rb_ivar_set(self, rb_intern("last_played_note"), scale_note);
   VALUE absolute_note = rb_funcall(self, rb_intern("scale_note_to_absolute"), 1, scale_note);
-  VALUE absolute_note_to_play = INT2FIX(FIX2INT(absolute_note) + middle_c);
+
+  VALUE octave_offset = rb_ivar_get(self, rb_intern("octave_offset"));
+  VALUE absolute_note_to_play = INT2FIX(FIX2INT(absolute_note) + FIX2INT(octave_offset));
 
   VALUE sound = rb_ivar_get(self, rb_intern("sound"));
   VALUE channel = rb_ivar_get(self, rb_intern("channel"));
@@ -386,10 +393,10 @@ void Init_ArtC_sound() {
   rb_define_alloc_func(cSound, sound_alloc);
   rb_define_method(cSound, "initialize", sound_initialize, 0);
   rb_define_method(cSound, "play", sound_play, 2);
-  rb_define_method(cSound, "channel", sound_get_channel, 1);
+  rb_define_method(cSound, "channel", sound_get_channel, 2);
 
   cSoundChannel = rb_define_class_under(cSound, "Channel", rb_cObject);
-  rb_define_method(cSoundChannel, "initialize", sound_channel_initialize, 2);
+  rb_define_method(cSoundChannel, "initialize", sound_channel_initialize, 3);
   rb_define_method(cSoundChannel, "bank=", sound_channel_set_bank, 1);
   rb_define_method(cSoundChannel, "play", sound_channel_play, 0);
   rb_define_private_method(cSoundChannel, "scale_note_to_absolute", sound_channel_scale_note_to_absolute, 1);
